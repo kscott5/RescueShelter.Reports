@@ -1,0 +1,3 @@
+[submodule "rescueshelter.services"]
+	path = rescueshelter.services
+	url = https://github.com/kscott5/rescueshelter.services
