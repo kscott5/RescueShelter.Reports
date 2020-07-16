@@ -30,5 +30,5 @@ export function PublishWebAPI(app: Application) : void {
             res.json(jsonResponse.createData(data));
         });
 
-        app.use('api/report', router);
+        app.use('/api/report', router);
 } // end PublishWebAPI
