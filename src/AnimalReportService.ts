@@ -31,4 +31,4 @@ export function PublishWebAPI(app: Application) : void {
         });
 
         app.use('api/report', router);
-}
+} // end PublishWebAPI
