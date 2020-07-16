@@ -15,6 +15,14 @@
     "mongoose": "^5.9.24",
     "morgan": "^1.10.0"
   },
+  "scripts": {
+    "clean": "rm -r -f ./dist",
+    "compile": "yarn run clean & tsc -p tsconfig.json",
+    "watch": "yarn run clean & tsc -p tsconfig.json --watch",
+    "mongo": "docker run -p 27017:27017 --rm --name mongo_dev mongo mongod",
+    "dataset": "python ./rescueshelter.services/sample.data.py",
+    "start": "node ./dist/server.js"
+  },
   "devDependencies": {
     "@types/blake2": "^4.0.0",
     "@types/body-parser": "^1.19.0",
