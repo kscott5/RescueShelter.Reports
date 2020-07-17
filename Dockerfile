@@ -1,5 +1,5 @@
 # https://hub.docker.com/_/node
-FROM node:14.5.0-alpine
+FROM node:latest
 
 # Python Install Package Manager Script
 COPY get-pip.py get-pip.py
