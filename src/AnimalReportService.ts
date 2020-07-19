@@ -27,11 +27,11 @@ import {SecurityDb} from "../rescueshelter.services/src/securityservice"
 let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
 
 class AnimalReaderDb {
-    private model;
+    public model;
     private selectionFields;
 
     constructor() {
-        this.model = services.getModel(services.ANIMAL_MODEL_NAME);
+        this.model = services.getModelReader(services.ANIMAL_MODEL_NAME);
         this.selectionFields = '_id name description imageSrc sponsors';                
     }
 
@@ -77,8 +77,6 @@ class AnimalReaderDb {
     } // end getAnimals
 
     async getCategories() : Promise<any> {
-        await this.model.create();
-        
         var data = await this.model.aggregate([
             { '$sort':  { 'category': 1} },
             { '$group': { '_id': '$category', 'count': { '$sum': 1}}},
