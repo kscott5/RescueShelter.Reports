@@ -88,5 +88,5 @@ export function PublishWebAPI(app: Application) : void {
         }
     });
 
-    app.use("/api/report/[(sponsor|sponsor)]", router);
+    app.use("/api/report/sponsors", router);
 } // end publishWebAPI

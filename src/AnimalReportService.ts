@@ -93,57 +93,57 @@ class AnimalReaderDb {
 } // end AnimalReaderDb
 
 export function PublishWebAPI(app: Application) : void {
-        // Parser for various different custom JSON types as JSON
-        let jsonBodyParser = bodyParser.json({type: 'application/json'});
-        let jsonResponse = new services.JsonResponse();            
+    // Parser for various different custom JSON types as JSON
+    let jsonBodyParser = bodyParser.json({type: 'application/json'});
+    let jsonResponse = new services.JsonResponse();            
 
-        let securityDb = new SecurityDb();
-        let db = new AnimalReaderDb();
- 
-        router.get('/categories', jsonBodyParser, async (req,res) => {
-            res.status(200);
+    let securityDb = new SecurityDb();
+    let db = new AnimalReaderDb();
 
-            try {
-                var data = await db.getCategories();
+    router.get('/categories', jsonBodyParser, async (req,res) => {
+        res.status(200);
 
-                res.json(jsonResponse.createData(data));
-            } catch(error) {
+        try {
+            var data = await db.getCategories();
+
+            res.json(jsonResponse.createData(data));
+        } catch(error) {
+            res.json(jsonResponse.createError(error));
+        }
+    }); // end animals categories
+
+    router.get("/", async (req,res) => {
+        console.debug(`GET: ${req.url}`);
+        var page = Number.parseInt(req.query["page"] as any || 1); 
+        var limit = Number.parseInt(req.query["limit"] as any || 5);
+        var phrase = req.query["phrase"] as string || '';
+
+        res.status(200);
+        
+        try {
+            var data = await db.getAnimals(page, limit, phrase);
+            res.json(jsonResponse.createPagination(data,1,page));
+        } catch(error) {
+            res.json(jsonResponse.createError(error));
+        }
+    }); //end animals
+
+    router.get('/:id', jsonBodyParser, async (req,res) => {
+        console.debug(`GET: ${req.url}`);
+        if (!req.params.id) {
+            res.status(404);
+            res.send("HttpGET id not available");
+            return;
+        }
+        res.status(200);
+        try {
+            var data = await db.model.findById(req.params.id);
+            res.json(jsonResponse.createData(data));
+        } catch(error) {
+                console.log(error);
                 res.json(jsonResponse.createError(error));
-            }
-        }); // end animals categories
+        }
+    }); // end animal with id
 
-        router.get("/", async (req,res) => {
-            console.debug(`GET: ${req.url}`);
-            var page = Number.parseInt(req.query["page"] as any || 1); 
-            var limit = Number.parseInt(req.query["limit"] as any || 5);
-            var phrase = req.query["phrase"] as string || '';
-
-            res.status(200);
-            
-            try {
-                var data = await db.getAnimals(page, limit, phrase);
-                res.json(jsonResponse.createPagination(data,1,page));
-            } catch(error) {
-                res.json(jsonResponse.createError(error));
-            }
-        }); //end animals
-
-        router.get('/:id', jsonBodyParser, async (req,res) => {
-            console.debug(`GET: ${req.url}`);
-            if (!req.params.id) {
-                res.status(404);
-                res.send("HttpGET id not available");
-                return;
-            }
-            res.status(200);
-            try {
-                var data = await db.model.findById(req.params.id);
-                res.json(jsonResponse.createData(data));
-            } catch(error) {
-                    console.log(error);
-                    res.json(jsonResponse.createError(error));
-            }
-        }); // end animal with id
-
-        app.use('/api/report/[(animal|animals)]', router);
+    app.use('/api/report/animals/', router);
 } // end PublishWebAPI
