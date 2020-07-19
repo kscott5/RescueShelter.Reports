@@ -3,7 +3,12 @@
 //       from Rescue Shelter Services project. Http Responses from these 
 //       Http Requests are a convention of ExpressJS Router and Ngnix proxy_pass. 
 //        
-// React UI example Http Requests without Ngnix where server
+// React UI example Http Requests without Ngnix where server is localhost. 
+// services.nginx.conf uses host O/S ip address. 
+//
+// ***************************************************************************
+// CAUTION. Docker containers have localhost with specific virtual ip address
+// ***************************************************************************
 //
 // http://[server]:3302/api/animal/new        [write]
 // http;//[server]:3302/api/animals           [readonly]
@@ -95,7 +100,7 @@ export function PublishWebAPI(app: Application) : void {
         let securityDb = new SecurityDb();
         let db = new AnimalReaderDb();
  
-        router.get('/animal/categories', jsonBodyParser, async (req,res) => {
+        router.get('/categories', jsonBodyParser, async (req,res) => {
             res.status(200);
 
             try {
@@ -105,9 +110,9 @@ export function PublishWebAPI(app: Application) : void {
             } catch(error) {
                 res.json(jsonResponse.createError(error));
             }
-        });
+        }); // end animals categories
 
-        router.get("/animals", async (req,res) => {
+        router.get("/", async (req,res) => {
             console.debug(`GET: ${req.url}`);
             var page = Number.parseInt(req.query["page"] as any || 1); 
             var limit = Number.parseInt(req.query["limit"] as any || 5);
@@ -121,9 +126,9 @@ export function PublishWebAPI(app: Application) : void {
             } catch(error) {
                 res.json(jsonResponse.createError(error));
             }
-        }); //end routeAnimals
+        }); //end animals
 
-        router.get('/animal/:id', jsonBodyParser, async (req,res) => {
+        router.get('/:id', jsonBodyParser, async (req,res) => {
             console.debug(`GET: ${req.url}`);
             if (!req.params.id) {
                 res.status(404);
@@ -138,7 +143,7 @@ export function PublishWebAPI(app: Application) : void {
                     console.log(error);
                     res.json(jsonResponse.createError(error));
             }
-        }); 
+        }); // end animal with id
 
-        app.use('/api/report', router);
+        app.use('/api/report/[(animal|animals)]', router);
 } // end PublishWebAPI
