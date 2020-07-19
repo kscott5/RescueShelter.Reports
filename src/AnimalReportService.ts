@@ -24,60 +24,70 @@ import bodyParser from "body-parser";
 import * as services from "../rescueshelter.services/src/services";
 import {SecurityDb} from "../rescueshelter.services/src/securityservice"
 
-let model = services.getModel(services.ANIMAL_MODEL_NAME);
 let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
-let _selectionFields = '_id name description imageSrc sponsors';
 
-async function getAnimal(id: String) : Promise<any>{
-    var data = await model.findById(id);
-    
-    return data;
-} 
+class AnimalReaderDb {
+    private model;
+    private selectionFields;
 
-async function getAnimals(page: Number = 1, limit: Number = 5, phrase?: String) : Promise<any> {
-    var animalAggregate = (!phrase)? model.aggregate() :
-        model.aggregate().append({$match: {$text: {$search: phrase}}});
-            
-    var data = await animalAggregate.append([
-        {
-            $lookup: {
-                from: "sponsors",
-                let: {animals_sponsors: '$sponsors'},
-                pipeline: [{
-                    $project: {
-                        _id: false, useremail: 1, username: 1, 
-                        is_sponsor: {$in: ['$useremail', '$$animals_sponsors']}
-                    }            
-                }],
-                as: "sponsors"
-            }        
-        },
-        {
-        $project: {
-            name: 1, description: 1, endangered: 1, image: 1,
-            sponsors: {
-                $filter: {
-                    input: '$sponsors',
-                    as: 'contributor',
-                    cond: {$eq: ['$$contributor.is_sponsor', true]}
+    constructor() {
+        this.model = services.getModel(services.ANIMAL_MODEL_NAME);
+        this.selectionFields = '_id name description imageSrc sponsors';                
+    }
+
+    async getAnimal(id: String) : Promise<any> {
+        var data = await this.model.findById(id);
+        
+        return data;
+    } // end getAnimal
+
+    async getAnimals(page: Number = 1, limit: Number = 5, phrase?: String) : Promise<any> {
+        var animalAggregate = (!phrase)? this.model.aggregate() :
+            this.model.aggregate().append({$match: {$text: {$search: phrase}}});
+                
+        var data = await animalAggregate.append([
+            {
+                $lookup: {
+                    from: "sponsors",
+                    let: {animals_sponsors: '$sponsors'},
+                    pipeline: [{
+                        $project: {
+                            _id: false, useremail: 1, username: 1, 
+                            is_sponsor: {$in: ['$useremail', '$$animals_sponsors']}
+                        }            
+                    }],
+                    as: "sponsors"
+                }        
+            },
+            {
+            $project: {
+                name: 1, description: 1, endangered: 1, image: 1,
+                sponsors: {
+                    $filter: {
+                        input: '$sponsors',
+                        as: 'contributor',
+                        cond: {$eq: ['$$contributor.is_sponsor', true]}
+                    }
                 }
-            }
-        }}
-    ])
-    .limit(limit as number);
-    
-    return data;
-} 
+            }}
+        ])
+        .limit(limit as number);
+        
+        return data;
+    } // end getAnimals
 
-async function getCategories() : Promise<any> {
-    var data = await model.aggregate([
-        { '$sort':  { 'category': 1} },
-        { '$group': { '_id': '$category', 'count': { '$sum': 1}}},
-        { '$project': { 'category': 1, 'count': 1}}
-    ]);
+    async getCategories() : Promise<any> {
+        await this.model.create();
+        
+        var data = await this.model.aggregate([
+            { '$sort':  { 'category': 1} },
+            { '$group': { '_id': '$category', 'count': { '$sum': 1}}},
+            { '$project': { 'category': 1, 'count': 1}}
+        ]);
 
-    return data;
-}
+        return data;
+    } // end getCategories
+} // end AnimalReaderDb
 
 export function PublishWebAPI(app: Application) : void {
         // Parser for various different custom JSON types as JSON
@@ -85,12 +95,13 @@ export function PublishWebAPI(app: Application) : void {
         let jsonResponse = new services.JsonResponse();            
 
         let securityDb = new SecurityDb();
+        let db = new AnimalReaderDb();
  
         router.get('/animal/categories', jsonBodyParser, async (req,res) => {
             res.status(200);
 
             try {
-                var data = await getCategories();
+                var data = await db.getCategories();
 
                 res.json(jsonResponse.createData(data));
             } catch(error) {
@@ -107,7 +118,7 @@ export function PublishWebAPI(app: Application) : void {
             res.status(200);
             
             try {
-                var data = await getAnimals(page, limit, phrase);
+                var data = await db.getAnimals(page, limit, phrase);
                 res.json(jsonResponse.createPagination(data,1,page));
             } catch(error) {
                 res.json(jsonResponse.createError(error));
@@ -123,7 +134,7 @@ export function PublishWebAPI(app: Application) : void {
             }
             res.status(200);
             try {
-                var data = await model.findById(req.params.id);
+                var data = await db.model.findById(req.params.id);
                 res.json(jsonResponse.createData(data));
             } catch(error) {
                     console.log(error);
