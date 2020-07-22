@@ -26,8 +26,7 @@
 import {Application, Router} from "express";
 import bodyParser from "body-parser";
 
-import * as services from "../rescueshelter.services/src/services";
-import {SecurityDb} from "../rescueshelter.services/src/securityservice"
+import {CoreServices} from "rescueshelter.core";
 
 let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
 
@@ -36,7 +35,7 @@ class AnimalReaderDb {
     private selectionFields;
 
     constructor() {
-        this.model = services.getModelReader(services.ANIMAL_MODEL_NAME);
+        this.model = CoreServices.getModelReader(CoreServices.ANIMAL_MODEL_NAME);
         this.selectionFields = '_id name description imageSrc sponsors';                
     }
 
@@ -95,9 +94,8 @@ class AnimalReaderDb {
 export function PublishWebAPI(app: Application) : void {
     // Parser for various different custom JSON types as JSON
     let jsonBodyParser = bodyParser.json({type: 'application/json'});
-    let jsonResponse = new services.JsonResponse();            
+    let jsonResponse = new CoreServices.JsonResponse();            
 
-    let securityDb = new SecurityDb();
     let db = new AnimalReaderDb();
 
     router.get('/categories', jsonBodyParser, async (req,res) => {

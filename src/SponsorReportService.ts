@@ -25,7 +25,7 @@
 //
 import {Application, Router} from "express";
 import * as bodyParser from "body-parser";
-import * as services from "../rescueshelter.services/src/services";
+import {CoreServices} from "rescueshelter.core";
 
 let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
 
@@ -35,7 +35,7 @@ class SponsorReaderDb {
 
     constructor() {
         this.__selectionFields =  "_id useremail username firstname lastname photo audit";
-        this.model = services.getModelReader(services.SPONSOR_MODEL_NAME);
+        this.model = CoreServices.getModelReader(CoreServices.SPONSOR_MODEL_NAME);
     }
 
     async getSponsor(id: String) : Promise<any>  {
@@ -57,7 +57,7 @@ class SponsorReaderDb {
 
 export function PublishWebAPI(app: Application) : void {
     let jsonBodyParser = bodyParser.json({type: 'application/json'});
-    let jsonResponse = new services.JsonResponse();
+    let jsonResponse = new CoreServices.JsonResponse();
 
     let db = new SponsorReaderDb();
 
