@@ -18,7 +18,6 @@
   },
   "scripts": {
     "clean": "rm -r -f ./dist",
-    "submodule": "git submodule update --remote --recursive",
     "compile": "yarn run clean & tsc -p tsconfig.json",
     "watch": "yarn run clean & tsc -p tsconfig.json --watch",
     "mongo": "docker run -p 27017:27017 --rm --name mongo_dev mongo mongod",
