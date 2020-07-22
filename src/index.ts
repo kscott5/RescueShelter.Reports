@@ -1,13 +1,6 @@
-import reports = require("../rescueshelter.services/src/server");
+import {CoreServer} from "rescueshelter.core";
 import {PublishWebAPI as AnimalReportServices} from "./AnimalReportService";
 import {PublishWebAPI as SponsorReportServices} from "./SponsorReportService";
 
-reports.serverName = 'Rescue Shelter Report Services';
-reports.serverPort = 3303;
-
-reports.middleware = [
-    AnimalReportServices,
-    SponsorReportServices
-];
-
-reports.listener();
+CoreServer.start('Rescue Shelter Report Services', 3302, 
+    [AnimalReportServices,SponsorReportServices], [], './public');
