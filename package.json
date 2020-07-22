@@ -1,6 +1,6 @@
 {
   "name": "rescueshelter.reports",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Rescue Shelter Report Services",
   "main": "index.js",
   "repository": "http://github.com/kscott5/rescueShelter.reports.git",
@@ -14,7 +14,7 @@
     "helmet": "^3.23.3",
     "mongoose": "^5.9.24",
     "morgan": "^1.10.0",
-    "rescueshelter.core": "^1.0.2"
+    "rescueshelter.core": "^1.0.3"
   },
   "scripts": {
     "clean": "rm -r -f ./dist",
