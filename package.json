@@ -1,6 +1,6 @@
 {
   "name": "rescueshelter.reports",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Rescue Shelter Report Services",
   "main": "index.js",
   "repository": "http://github.com/kscott5/rescueShelter.reports.git",
