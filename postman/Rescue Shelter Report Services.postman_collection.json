@@ -16,12 +16,12 @@
 						"exec": [
 							"var assert = require('chai').assert;",
 							"",
-							"pm.test('Success status ok', () => {",
+							"pm.test('Animals request status ok', () => {",
 							"    pm.response.to.have.status(200);",
 							"    pm.response.to.have.jsonBody('ok', true);",
 							"})",
 							"",
-							"pm.test('data.pages === 1', () => {",
+							"pm.test('Animals data.pages === 1', () => {",
 							"    let body = pm.response.json();",
 							"    let data = body.data;",
 							"",
@@ -31,7 +31,7 @@
 							"    pm.expect(data.pages).to.equal(1);",
 							"});",
 							"",
-							"pm.test('data.pageIndex == 1', () => {",
+							"pm.test('Animals data.pageIndex == 1', () => {",
 							"    let body = pm.response.json();",
 							"    let data = body.data;",
 							"",
@@ -41,14 +41,14 @@
 							"    pm.expect(data.pageIndex).to.equal(1);",
 							"});",
 							"",
-							"pm.test('data.documents.length === 5', () => {",
+							"pm.test('Animals data.documents.length === 5', () => {",
 							"    let body = pm.response.json();",
 							"    let data = body.data;",
 							"",
 							"    pm.expect(data.documents).to.be.an('array').that.lengthOf(5);",
 							"});",
 							"",
-							"pm.test('data.documents[0].properties contains  [_id, name, description, image, endangered, sponsors]', () => {",
+							"pm.test('Animals first data.documents[0].properties contains  [_id, name, description, image, endangered, sponsors]', () => {",
 							"    let body = pm.response.json();",
 							"    let data = body.data;",
 							"",
@@ -73,7 +73,10 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": ""
+					"raw": "",
+					"options": {
+						"raw": {}
+					}
 				},
 				"url": {
 					"raw": "http://localhost/api/report/animals",
@@ -120,6 +123,65 @@
 		},
 		{
 			"name": "http://localhost/api/report/animals/:id",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "1b239146-b107-4f5c-9ed2-02bf110c8940",
+						"exec": [
+							"var assert = require('chai').assert;",
+							"",
+							"pm.test('Animal data request status ok', () => {",
+							"    pm.response.to.have.status(200);",
+							"    pm.response.to.have.jsonBody('ok', true);",
+							"})",
+							"",
+							"",
+							"pm.test('Animal data for image', () => {",
+							"    let body = pm.response.json();",
+							"    let data = body.data;",
+							"",
+							"    pm.expect(data.image.content).to.equal('github alternate');",
+							"    pm.expect(data.image.contenttype).to.equal('icon');",
+							"});",
+							"",
+							"",
+							"pm.test('Animal data for dates', () => {",
+							"    let body = pm.response.json();",
+							"    let data = body.data;",
+							"",
+							"    pm.expect(data.dates.created).to.be.a('Date');",
+							"    pm.expect(data.dates.modified).to.be.a('Date');",
+							"});",
+							"",
+							"pm.test('Animal data population', () => {",
+							"    let body = pm.response.json();",
+							"    let data = body.data;",
+							"",
+							"    pm.expect(data.data).to.be.an('array').to.have.lengthOf(100);",
+							"    pm.expect(data.data[0]).to.have.property('population');",
+							"    pm.expect(data.data[0]).to.have.property('created');",
+							"});",
+							"",
+							"pm.test('Animal data properties contains  [_id, name, description, image, endangered, sponsors, category]', () => {",
+							"    let body = pm.response.json();",
+							"    let data = body.data;",
+							"",
+							"    pm.expect(data).to.have.property('_id');",
+							"    pm.expect(data).to.have.property('name');",
+							"    pm.expect(data).to.have.property('description');",
+							"    pm.expect(data).to.have.property('image');",
+							"    pm.expect(data).to.have.property('endangered');",
+							"    pm.expect(data).to.have.property('category');",
+							"    pm.expect(data).to.have.property('sponsors');",
+							"});",
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"protocolProfileBehavior": {
 				"disableBodyPruning": true
 			},
@@ -128,10 +190,13 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": ""
+					"raw": "",
+					"options": {
+						"raw": {}
+					}
 				},
 				"url": {
-					"raw": "http://localhost/api/report/animals/:id",
+					"raw": "http://localhost/api/report/animals/5f1af2823de493d9b55f06a9",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -140,13 +205,7 @@
 						"api",
 						"report",
 						"animals",
-						":id"
-					],
-					"variable": [
-						{
-							"key": "id",
-							"value": ""
-						}
+						"5f1af2823de493d9b55f06a9"
 					]
 				},
 				"description": "Gets a specific animal details"
@@ -196,7 +255,10 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": ""
+					"raw": "",
+					"options": {
+						"raw": {}
+					}
 				},
 				"url": {
 					"raw": "http://localhost/api/report/sponsors",
@@ -251,7 +313,10 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": ""
+					"raw": "",
+					"options": {
+						"raw": {}
+					}
 				},
 				"url": {
 					"raw": "http://localhost/api/report/sponsors/:id",
@@ -268,7 +333,8 @@
 					"variable": [
 						{
 							"key": "id",
-							"value": ""
+							"value": "",
+							"type": "string"
 						}
 					]
 				},
