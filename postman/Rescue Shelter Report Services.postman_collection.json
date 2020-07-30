@@ -247,6 +247,66 @@
 		},
 		{
 			"name": "http://localhost/api/report/sponsors",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "8d0eb893-82a5-4406-aa0d-0b2d60d20184",
+						"exec": [
+							"var assert = require('chai').assert;",
+							"",
+							"pm.test('Sponsors request status ok', () => {",
+							"    console.log('Hey there.');",
+							"    ",
+							"    pm.response.to.have.status(200);",
+							"    pm.response.to.have.jsonBody('ok', true);",
+							"})",
+							"",
+							"pm.test('Sponsors data.pages === 1', () => {",
+							"    let body = pm.response.json();",
+							"    let data = body.data;",
+							"",
+							"    pm.response.to.have.jsonBody(\"data['pages']\", 1);",
+							"",
+							"    pm.expect(data).to.have.property('pages');",
+							"    pm.expect(data.pages).to.equal(1);",
+							"});",
+							"",
+							"pm.test('Sponsors data.pageIndex == 1', () => {",
+							"    let body = pm.response.json();",
+							"    let data = body.data;",
+							"",
+							"    pm.response.to.have.jsonBody(\"data['pageIndex']\", 1);",
+							"",
+							"    pm.expect(data).to.have.property('pageIndex');",
+							"    pm.expect(data.pageIndex).to.equal(1);",
+							"});",
+							"",
+							"pm.test('Sponsors data.documents.length === 5', () => {",
+							"    let body = pm.response.json();",
+							"    let data = body.data;",
+							"",
+							"    pm.expect(data.documents).to.be.an('array').that.lengthOf(5);",
+							"});",
+							"",
+							"pm.test('All sponsors data.documents[0].properties contains  [_id, useremail, firstname, lastname, photo, audit]', () => {",
+							"    let body = pm.response.json();",
+							"    let data = body.data;",
+							"",
+							"    pm.expect(data.documents[0]).to.have.property('_id');",
+							"    pm.expect(data.documents[0]).to.have.property('firstname');",
+							"    pm.expect(data.documents[0]).to.have.property('lastname');",
+							"    pm.expect(data.documents[0]).to.have.property('useremail');",
+							"    pm.expect(data.documents[0]).to.have.property('photo');",
+							"    pm.expect(data.documents[0]).to.have.property('audit');",
+							"",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"protocolProfileBehavior": {
 				"disableBodyPruning": true
 			},
@@ -305,6 +365,52 @@
 		},
 		{
 			"name": "http://localhost/api/report/sponsors/:id",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "f04a92bc-ad23-48dd-8f65-5c7fbff78cb8",
+						"exec": [
+							"var assert = require('chai').assert;",
+							"",
+							"pm.test('Sponsor data request status ok', () => {",
+							"    pm.response.to.have.status(200);",
+							"    pm.response.to.have.jsonBody('ok', true);",
+							"})",
+							"",
+							"pm.test('Sponsor data for audit array', () => {",
+							"    let body = pm.response.json();",
+							"    let data = body.data;",
+							"",
+							"    pm.expect(data.audit).to.be.an('Array');",
+							"    pm.expect(data.audit).to.be.have.lengthOf(1);",
+							"});",
+							"",
+							"pm.test('Sponsor data not security', () => {",
+							"    let body = pm.response.json();",
+							"    let data = body.data;",
+							"",
+							"    pm.expect(data).to.not.have.property('security');",
+							"});",
+							"",
+							"pm.test('Sponsor data properties contains [_id, firstname, lastname, username, useremail, photo]', () => {",
+							"    let body = pm.response.json();",
+							"    let data = body.data;",
+							"",
+							"    pm.expect(data).to.have.property('_id');",
+							"    pm.expect(data).to.have.property('firstname');",
+							"    pm.expect(data).to.have.property('lastname');",
+							"    pm.expect(data).to.have.property('photo');",
+							"    pm.expect(data).to.have.property('username');",
+							"    pm.expect(data).to.have.property('useremail');",
+							"});",
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"protocolProfileBehavior": {
 				"disableBodyPruning": true
 			},
@@ -319,7 +425,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost/api/report/sponsors/:id",
+					"raw": "http://localhost/api/report/sponsors/5f1af2623de493d9b55f069d",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -328,14 +434,7 @@
 						"api",
 						"report",
 						"sponsors",
-						":id"
-					],
-					"variable": [
-						{
-							"key": "id",
-							"value": "",
-							"type": "string"
-						}
+						"5f1af2623de493d9b55f069d"
 					]
 				},
 				"description": "Gets a specific sponsor member details"
