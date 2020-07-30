@@ -1,0 +1,314 @@
+{
+	"info": {
+		"_postman_id": "d9767471-f8b8-4c4b-9125-036f911efdf0",
+		"name": "Rescue Shelter Report Services",
+		"description": "# Introduction\nWhat does your API do?\n\n# Overview\nThings that the developers should know about\n\n# Authentication\nWhat is the preferred way of using the API?\n\n# Error Codes\nWhat errors and status codes can a user expect?\n\n# Rate limit\nIs there a limit to the number of requests an user can send?",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "http://localhost/api/report/animals",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "6bd278b8-8050-45a3-a3b7-6948ed7c3c44",
+						"exec": [
+							"var assert = require('chai').assert;",
+							"",
+							"pm.test('Success status ok', () => {",
+							"    pm.response.to.have.status(200);",
+							"    pm.response.to.have.jsonBody('ok', true);",
+							"})",
+							"",
+							"pm.test('data.pages === 1', () => {",
+							"    let body = pm.response.json();",
+							"    let data = body.data;",
+							"",
+							"    pm.response.to.have.jsonBody(\"data['pages']\", 1);",
+							"",
+							"    pm.expect(data).to.have.property('pages');",
+							"    pm.expect(data.pages).to.equal(1);",
+							"});",
+							"",
+							"pm.test('data.pageIndex == 1', () => {",
+							"    let body = pm.response.json();",
+							"    let data = body.data;",
+							"",
+							"    pm.response.to.have.jsonBody(\"data['pageIndex']\", 1);",
+							"",
+							"    pm.expect(data).to.have.property('pageIndex');",
+							"    pm.expect(data.pageIndex).to.equal(1);",
+							"});",
+							"",
+							"pm.test('data.documents.length === 5', () => {",
+							"    let body = pm.response.json();",
+							"    let data = body.data;",
+							"",
+							"    pm.expect(data.documents).to.be.an('array').that.lengthOf(5);",
+							"});",
+							"",
+							"pm.test('data.documents[0].properties contains  [_id, name, description, image, endangered, sponsors]', () => {",
+							"    let body = pm.response.json();",
+							"    let data = body.data;",
+							"",
+							"    pm.expect(data.documents[0]).to.have.property('_id');",
+							"    pm.expect(data.documents[0]).to.have.property('name');",
+							"    pm.expect(data.documents[0]).to.have.property('description');",
+							"    pm.expect(data.documents[0]).to.have.property('image');",
+							"    pm.expect(data.documents[0]).to.have.property('endangered');",
+							"    pm.expect(data.documents[0]).to.have.property('sponsors');",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost/api/report/animals",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"path": [
+						"api",
+						"report",
+						"animals"
+					]
+				},
+				"description": "Gets a list of endangered animals"
+			},
+			"response": [
+				{
+					"name": "Default",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "localhost://api/report/animals",
+							"protocol": "localhost",
+							"host": [
+								"api"
+							],
+							"path": [
+								"report",
+								"animals"
+							]
+						}
+					},
+					"_postman_previewlanguage": null,
+					"header": null,
+					"cookie": [],
+					"body": ""
+				}
+			]
+		},
+		{
+			"name": "http://localhost/api/report/animals/:id",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost/api/report/animals/:id",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"path": [
+						"api",
+						"report",
+						"animals",
+						":id"
+					],
+					"variable": [
+						{
+							"key": "id",
+							"value": ""
+						}
+					]
+				},
+				"description": "Gets a specific animal details"
+			},
+			"response": [
+				{
+					"name": "Default",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "localhost://api/report/animals/:id",
+							"protocol": "localhost",
+							"host": [
+								"api"
+							],
+							"path": [
+								"report",
+								"animals",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"_postman_previewlanguage": null,
+					"header": null,
+					"cookie": [],
+					"body": ""
+				}
+			]
+		},
+		{
+			"name": "http://localhost/api/report/sponsors",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost/api/report/sponsors",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"path": [
+						"api",
+						"report",
+						"sponsors"
+					]
+				},
+				"description": "Gets a list of sponsor members"
+			},
+			"response": [
+				{
+					"name": "Default",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "localhost://api/report/sponsors",
+							"protocol": "localhost",
+							"host": [
+								"api"
+							],
+							"path": [
+								"report",
+								"sponsors"
+							]
+						}
+					},
+					"_postman_previewlanguage": null,
+					"header": null,
+					"cookie": [],
+					"body": ""
+				}
+			]
+		},
+		{
+			"name": "http://localhost/api/report/sponsors/:id",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost/api/report/sponsors/:id",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"path": [
+						"api",
+						"report",
+						"sponsors",
+						":id"
+					],
+					"variable": [
+						{
+							"key": "id",
+							"value": ""
+						}
+					]
+				},
+				"description": "Gets a specific sponsor member details"
+			},
+			"response": [
+				{
+					"name": "Default",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "localhost://api/report/sponsors/:id",
+							"protocol": "localhost",
+							"host": [
+								"api"
+							],
+							"path": [
+								"report",
+								"sponsors",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"_postman_previewlanguage": null,
+					"header": null,
+					"cookie": [],
+					"body": ""
+				}
+			]
+		}
+	],
+	"protocolProfileBehavior": {}
+}
