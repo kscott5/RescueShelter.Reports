@@ -3,6 +3,19 @@ The creation of a report service or [git submodule](https://git-scm.com/book/en/
 
 Removed submodule and opt-in with code structure, npm package registry, and package.json dependencies.
 
+
+The server should start on localhost port 3303.  
+[http://localhost:3303/api/report/animals](http://localhost:3303/api/report/animals)   
+[http://localhost:3303/api/report/sponsors](http://localhost:3303/api/report/sponsors)   
+[http://localhost:3303/api/report/secure](http://localhost:3303/api/report/secure)   
+
+
+
+However, with nginx_dev docker instance access on port 80.   
+[http://localhost/api/report/animal](http://localhost/api/report/animals)   
+[http://localhost/api/report/sponsors](http://localhost/api/report/sponsors)   
+
+
 ## Hint: docker commands
 ```
 docker pull mongo
