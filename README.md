@@ -1,7 +1,7 @@
 # Rescue Shelter Report Services  
 The creation of a report service or [git submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules) are additional effort for a simple project. However, it does provide new architectural challenges.  
 
-
+Removed submodule and opt-in with code structure, npm package registry, and package.json dependencies.
 
 ## Hint: docker commands
 ```
@@ -15,4 +15,11 @@ docker exec -it nginx_dev nginx -h
 docker exec -it nginx_dev nginx -T
 docker exec -it nginx_dev nginx -s reload
 ```
+
+## [Generates sample data](https://github.com/kscott5/DataLake/blob/master/src/rescueshelter/sample.data.py) of 100k random animals and 10 authenticated sponsors with useremail and passwords. Execute after mongo_dev docker instance is available.
+```
+python sample.data.py
+```
+
+
 ### Absolutely should create a Dockerfile from nginx and copy configuration or source files
