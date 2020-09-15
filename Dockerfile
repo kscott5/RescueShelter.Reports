@@ -3,6 +3,7 @@
 # https://www.docker.com/blog/tips-for-deploying-nginx-official-image-with-docker/
 FROM nginx:latest
 
+
 # Python Install Package Manager Script
 COPY *.conf /etc/nginx/conf.d/
 

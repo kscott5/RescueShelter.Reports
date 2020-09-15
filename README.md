@@ -30,6 +30,8 @@ find . -name '*.conf' -exec docker cp '{}' nginx_dev:/etc/nginx/conf.d/'{} \;
 # copy a single file using docker cp command
 docker cp services.nginx.conf nginx_dev:/etc/nginx/conf.d/rescueshelter.services.nginx.conf
 
+docker network create --driver=bridge --subnet 172.18.0.0/16 mongodb
+
 docker exec -it nginx_dev nginx -h
 docker exec -it nginx_dev nginx -T
 docker exec -it nginx_dev nginx -s reload
