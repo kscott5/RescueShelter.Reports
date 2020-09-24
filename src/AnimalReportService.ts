@@ -23,8 +23,10 @@
 //
 // ADDITION EFFORT FOR PROOF OF CONCEPT [poc]
 //
-import {Application, Router} from "express";
+import {Application, NextFunction, Request, Response, Router} from "express";
 import bodyParser from "body-parser";
+import {RedisClient} from "redis";
+
 
 import {CoreServices} from "rescueshelter.core";
 
@@ -98,19 +100,54 @@ export function PublishWebAPI(app: Application) : void {
 
     let db = new AnimalReaderDb();
 
+    let client: RedisClient;
+    try {
+        client = new RedisClient({host: 'localhost', port: 6379}); 
+    } catch(error) {
+        console.log('docker run -d -p 127.0.0.1:6379:6379 --name redis_dev redis-server --loglevel debug');
+    }
+
+    async function inMemoryCache(req: Request, res: Response, next: NextFunction) {
+        
+        try {
+            if(client.exists(req.params.id) === true) {
+                client.get(req.params.id, (error, reply) => {            
+                    res.json(jsonResponse.createData(reply));
+                });
+            } else if(client.exists(req.url) === true) {
+                client.get(req.params.id, (error, reply) => {
+                    res.json(jsonResponse.createData(reply));
+                });
+            } else {
+                next();
+            }
+        } catch(error) {            
+            next();
+        }
+    } // inMemoryCache
+    
+    app.use(inMemoryCache);
+
     router.get('/categories', jsonBodyParser, async (req,res) => {
         res.status(200);
 
         try {
             var data = await db.getCategories();
+            var jsonData = jsonResponse.createData(data);
 
-            res.json(jsonResponse.createData(data));
+            try {
+                client.set(req.url, jsonData);
+            } catch(error) {
+                console.log(error);
+            } finally {
+                res.json(jsonData);
+            }
         } catch(error) {
             res.json(jsonResponse.createError(error));
         }
     }); // end animals categories
 
-    router.get("/", async (req,res) => {
+    router.get("/", jsonBodyParser, async (req,res) => {
         console.debug(`GET: ${req.url}`);
         var page = Number.parseInt(req.query["page"] as any || 1); 
         var limit = Number.parseInt(req.query["limit"] as any || 5);
