@@ -14,6 +14,7 @@
     "helmet": "^3.23.3",
     "mongoose": "^5.9.24",
     "morgan": "^1.10.0",
+    "redis": "^3.0.2",
     "rescueshelter.core": "^1.0.3"
   },
   "scripts": {
@@ -31,6 +32,7 @@
     "@types/helmet": "^0.0.47",
     "@types/mongoose": "^5.7.31",
     "@types/morgan": "^1.9.1",
+    "@types/redis": "^2.8.27",
     "typescript": "^3.9.6"
   }
 }
