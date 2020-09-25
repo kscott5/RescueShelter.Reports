@@ -127,20 +127,19 @@ export function PublishWebAPI(app: Application) : void {
                 await asynGet(req.params.id, (error, reply) => {            
                     res.json(JSON.parse(reply));
                 });
-                client.quit();
             } else if(await asynExists(req.originalUrl, redis.print) == true) {
-                await asynGet(req.originalUrl, (error, reply) => {
+                await asynGet(req.originalUrl).then(reply => {
                     res.json(JSON.parse(reply));
-                }, redis.print);
-                client.quit(redis.print);
+                });
             } else {
-                client.quit(redis.print);
                 next();
             }
         } catch(error) {
             console.log(error);
             next();
-        } 
+        } finally {
+            client?.quit(redis.print);
+        }
     } // inMemoryCache
     
     app.use(inMemoryCache);
