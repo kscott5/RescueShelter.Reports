@@ -63,9 +63,8 @@ export function PublishWebAPI(app: Application) : void {
 
     let db = new SponsorReaderDb();
 
-    let client: RedisClient;
     try {
-        client = new RedisClient({host: 'localhost', port: 6379});         
+        (new RedisClient({host: 'localhost', port: 6379}))?.quit();
     } catch(error) {
         console.log('**************These projects are professional entertainment***************')
         console.log('The following command configures an out of process Redis.io memory cache.');
@@ -80,8 +79,10 @@ export function PublishWebAPI(app: Application) : void {
     }
 
     async function inMemoryCache(req: Request, res: Response, next: NextFunction) {
-        
+        var client: RedisClient;
         try {
+            client = new RedisClient({host: 'localhost', port: 6379});
+
             if(client.exists(req.params.id) === true) {
                 client.get(req.params.id, (error, reply) => {            
                     res.json(jsonResponse.createData(reply));
@@ -95,6 +96,8 @@ export function PublishWebAPI(app: Application) : void {
             }
         } catch(error) {            
             next();
+        } finally {
+            client?.quit();
         }
     } // inMemoryCache
     
@@ -104,9 +107,21 @@ export function PublishWebAPI(app: Application) : void {
         console.debug(`GET [:id]: ${req.url}`);
         res.status(200);
 
+        var client: RedisClient;
         try {
             var data = await db.getSponsor(req.params.id);
-            res.json(jsonResponse.createData(data));
+            var jsonData = jsonResponse.createData(data);
+
+            try { // Data Caching
+                client = new RedisClient({host: 'localhost', port: 6379})
+                client.set(req.url, jsonData);
+                client.expire(req.url, 60/*seconds*/*10);
+            } catch(error) {
+                console.log(error);
+            } finally {
+                client?.quit();
+                res.json(jsonData);
+            }
         } catch(error) {
             res.json(jsonResponse.createError(error));
         }
@@ -119,9 +134,21 @@ export function PublishWebAPI(app: Application) : void {
         var phrase = req.query.phrase as any || null;
 
         res.status(200);
+
+        var client: RedisClient;
         try {
             var data = await db.getSponsors(page,limit,phrase);
-            res.json(jsonResponse.createPagination(data, 1, page));
+            var jsonData = jsonResponse.createPagination(data, 1, page);
+
+            try { // Data caching
+                client.set(req.url, jsonData);
+                client.expire(req.url, 60/*seconds*/*10);
+            } catch(error) {
+                console.log(error);
+            } finally {
+                client?.quit();
+                res.json(jsonData);
+            }
         } catch(error) {
             res.json(jsonResponse.createError(error));
         }
