@@ -26,7 +26,6 @@
 import {Application, NextFunction, Request, Response, Router} from "express";
 import bodyParser from "body-parser";
 import * as redis from "redis";
-import * as util from "util";
 
 import {CoreServices} from "rescueshelter.core";
 
@@ -79,19 +78,24 @@ export function PublishWebAPI(app: Application) : void {
         console.log('quit'); //exit telnet sessions
     }
 
+    const SPONSORS_ROUTER_BASE_URL = '/api/report/sponsors/';
     async function inMemoryCache(req: Request, res: Response, next: NextFunction) {
-        console.debug(`Redis [inMemoryCache] key \'${req.originalUrl}\'`);
+        if(req.originalUrl.startsWith(SPONSORS_ROUTER_BASE_URL) === false) 
+            next();
+
+        console.debug(`Redis [Sponsors: inMemoryCache] key \'${req.originalUrl}\'`);
+    
         var client: redis.RedisClient;
         try {
             client = new redis.RedisClient({host: 'localhost', port: 6379});
-            var asynExists = util.promisify(client.exists).bind(client);
-            var asynGet = util.promisify(client.get).bind(client);
 
             if(client.exists(req.params?.id+'', redis.print) === true) {
+                res.status(200);
                 client.get(req.params.id, (error, reply) => {            
                     res.json(jsonResponse.createData(JSON.parse(reply)));
                 });
             } else if(client.exists(req.originalUrl, redis.print) === true) {
+                res.status(200);
                 client.get(req.originalUrl, (error, reply) => {
                     res.json(jsonResponse.createData(JSON.parse(reply)));
                 });
@@ -159,5 +163,5 @@ export function PublishWebAPI(app: Application) : void {
         }
     });
 
-    app.use("/api/report/sponsors", router);
+    app.use(SPONSORS_ROUTER_BASE_URL, router);
 } // end publishWebAPI
