@@ -131,7 +131,7 @@ export function PublishWebAPI(app: Application) : void {
             } else if(await asynExists(req.originalUrl, redis.print) == true) {
                 await asynGet(req.originalUrl, (error, reply) => {
                     res.json(JSON.parse(reply));
-                }), redis.print;
+                }, redis.print);
                 client.quit(redis.print);
             } else {
                 client.quit(redis.print);
