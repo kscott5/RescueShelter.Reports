@@ -67,6 +67,7 @@ export function PublishWebAPI(app: Application) : void {
     try {
         client = new RedisClient({host: 'localhost', port: 6379});         
     } catch(error) {
+        console.log('**************These projects are professional entertainment***************')
         console.log('The following command configures an out of process Redis.io memory cache.');
         console.log('In process requires Redis.io install in the process of RescueShelter.Reports.');
         console.log('\n');
