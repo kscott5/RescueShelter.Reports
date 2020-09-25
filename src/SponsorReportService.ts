@@ -87,7 +87,7 @@ export function PublishWebAPI(app: Application) : void {
             var asynExists = util.promisify(client.exists).bind(client);
             var asynGet = util.promisify(client.get).bind(client);
 
-            if(client.exists(req.params?.id, redis.print) === true) {
+            if(client.exists(req.params?.id+'', redis.print) === true) {
                 client.get(req.params.id, (error, reply) => {            
                     res.json(jsonResponse.createData(JSON.parse(reply)));
                 });
