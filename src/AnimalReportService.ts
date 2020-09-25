@@ -116,40 +116,45 @@ export function PublishWebAPI(app: Application) : void {
     }
 
     const ANIMAL_ROUTER_BASE_URL = '/api/report/animals/';
-    async function inMemoryCache(req: Request, res: Response, next: NextFunction) {
-        if(req.originalUrl.startsWith(ANIMAL_ROUTER_BASE_URL) === false) 
-            next();
-
+    async function AnimalRedisMiddleware(req: Request, res: Response, next: NextFunction) {
         console.debug(`Redis [Animal: inMemoryCache] key \'${req.originalUrl}\'`);
         
-        var client: redis.RedisClient;
-        try {
-            client = new redis.RedisClient({host: 'localhost', port: 6379});
-            var asynExists = util.promisify(client.exists).bind(client);
-            var asynGet = util.promisify(client.get).bind(client);
+        if(req.originalUrl.startsWith(ANIMAL_ROUTER_BASE_URL) === true) {
+            var client: redis.RedisClient;
 
-            if(await asynExists(req.params?.id+'', redis.print) == true) {
-                res.status(200);
-                await asynGet(req.params.id, (error, reply) => {            
-                    res.json(JSON.parse(reply));
-                });
-            } else if(await asynExists(req.originalUrl, redis.print) == true) {
-                res.status(200);
-                await asynGet(req.originalUrl).then(reply => {
-                    res.json(JSON.parse(reply));
-                });
-            } else {
-                next();
+            try { // Reading data from Redis in memory cache
+                client = new redis.RedisClient({host: 'localhost', port: 6379});
+
+                var asynExists = util.promisify(client.exists).bind(client);
+                var asynGet = util.promisify(client.get).bind(client);
+
+                if(await asynExists(req.params?.id+'', redis.print) == true) {
+                    res.status(200);
+                    await asynGet(req.params.id, (error, reply) => {            
+                        res.json(JSON.parse(reply));
+                    });
+                    return;
+
+                } else if(await asynExists(req.originalUrl, redis.print) == true) {
+                    res.status(200);
+                    await asynGet(req.originalUrl).then(reply => {
+                        res.json(JSON.parse(reply));
+                    });
+                    return;
+                    
+                } // end if key exist check
+
+            } catch(error) { // Redis cache access
+                console.log(error); 
+            } finally {
+                client?.quit(redis.print);
             }
-        } catch(error) {
-            console.log(error);
-            next();
-        } finally {
-            client?.quit(redis.print);
-        }
-    } // inMemoryCache
+        } // if express animal router
+
+        next(); // middleware
+    } // AnimalRedisMiddleware
     
-    app.use(inMemoryCache);
+    app.use(AnimalRedisMiddleware);
 
     router.get('/categories', jsonBodyParser, async (req,res) => {
         console.debug(`GET: ${req.url}`);        
