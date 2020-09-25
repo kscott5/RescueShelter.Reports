@@ -25,7 +25,8 @@
 //
 import {Application, NextFunction, Request, Response, Router} from "express";
 import bodyParser from "body-parser";
-import {RedisClient} from "redis";
+import * as redis from "redis";
+import * as util from "util";
 
 import {CoreServices} from "rescueshelter.core";
 
@@ -64,7 +65,7 @@ export function PublishWebAPI(app: Application) : void {
     let db = new SponsorReaderDb();
 
     try {
-        (new RedisClient({host: 'localhost', port: 6379}))?.quit();
+        (new redis.RedisClient({host: 'localhost', port: 6379}))?.quit();
     } catch(error) {
         console.log('**************These projects are professional entertainment***************')
         console.log('The following command configures an out of process Redis.io memory cache.');
@@ -79,17 +80,19 @@ export function PublishWebAPI(app: Application) : void {
     }
 
     async function inMemoryCache(req: Request, res: Response, next: NextFunction) {
-        var client: RedisClient;
+        var client: redis.RedisClient;
         try {
-            client = new RedisClient({host: 'localhost', port: 6379});
+            client = new redis.RedisClient({host: 'localhost', port: 6379});
+            var asynExists = util.promisify(client.exists).bind(client);
+            var asynGet = util.promisify(client.get).bind(client);
 
-            if(client.exists(req.params.id) === true) {
+            if(client.exists(req.params?.id, redis.print) === true) {
                 client.get(req.params.id, (error, reply) => {            
-                    res.json(jsonResponse.createData(reply));
+                    res.json(jsonResponse.createData(JSON.parse(reply)));
                 });
-            } else if(client.exists(req.url) === true) {
-                client.get(req.params.id, (error, reply) => {
-                    res.json(jsonResponse.createData(reply));
+            } else if(client.exists(req.originalUrl) === true) {
+                client.get(req.originalUrl, (error, reply) => {
+                    res.json(jsonResponse.createData(JSON.parse(reply)));
                 });
             } else {
                 next();
@@ -107,15 +110,15 @@ export function PublishWebAPI(app: Application) : void {
         console.debug(`GET [:id]: ${req.url}`);
         res.status(200);
 
-        var client: RedisClient;
         try {
             var data = await db.getSponsor(req.params.id);
             var jsonData = jsonResponse.createData(data);
 
+            var client: redis.RedisClient;
             try { // Data Caching
-                client = new RedisClient({host: 'localhost', port: 6379})
-                client.set(req.url, jsonData);
-                client.expire(req.url, 60/*seconds*/*10);
+                client = new redis.RedisClient({host: 'localhost', port: 6379})
+                client.set(req.originalUrl, JSON.stringify(jsonData), redis.print);
+                client.expire(req.originalUrl, 60/*seconds*/*10), redis.print;
             } catch(error) {
                 console.log(error);
             } finally {
@@ -135,14 +138,14 @@ export function PublishWebAPI(app: Application) : void {
 
         res.status(200);
 
-        var client: RedisClient;
         try {
             var data = await db.getSponsors(page,limit,phrase);
             var jsonData = jsonResponse.createPagination(data, 1, page);
 
+            var client: redis.RedisClient;
             try { // Data caching
-                client.set(req.url, jsonData);
-                client.expire(req.url, 60/*seconds*/*10);
+                client.set(req.url, JSON.stringify(jsonData), redis.print);
+                client.expire(req.url, 60/*seconds*/*10, redis.print);
             } catch(error) {
                 console.log(error);
             } finally {
