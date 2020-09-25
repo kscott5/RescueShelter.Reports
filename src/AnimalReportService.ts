@@ -115,8 +115,13 @@ export function PublishWebAPI(app: Application) : void {
         console.log('quit'); //exit telnet sessions
     }
 
+    const ANIMAL_ROUTER_BASE_URL = '/api/report/animals/';
     async function inMemoryCache(req: Request, res: Response, next: NextFunction) {
-        console.debug(`Redis [inMemoryCache] key \'${req.originalUrl}\'`);
+        if(req.originalUrl.startsWith(ANIMAL_ROUTER_BASE_URL) === false) 
+            next();
+
+        console.debug(`Redis [Animal: inMemoryCache] key \'${req.originalUrl}\'`);
+        
         var client: redis.RedisClient;
         try {
             client = new redis.RedisClient({host: 'localhost', port: 6379});
@@ -124,10 +129,12 @@ export function PublishWebAPI(app: Application) : void {
             var asynGet = util.promisify(client.get).bind(client);
 
             if(await asynExists(req.params?.id+'', redis.print) == true) {
+                res.status(200);
                 await asynGet(req.params.id, (error, reply) => {            
                     res.json(JSON.parse(reply));
                 });
             } else if(await asynExists(req.originalUrl, redis.print) == true) {
+                res.status(200);
                 await asynGet(req.originalUrl).then(reply => {
                     res.json(JSON.parse(reply));
                 });
@@ -227,5 +234,5 @@ export function PublishWebAPI(app: Application) : void {
         }
     }); // end animal with id
 
-    app.use('/api/report/animals/', router);
+    app.use(ANIMAL_ROUTER_BASE_URL, router);
 } // end PublishWebAPI
