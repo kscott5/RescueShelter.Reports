@@ -115,17 +115,18 @@ export function PublishWebAPI(app: Application) : void {
     }
 
     async function inMemoryCache(req: Request, res: Response, next: NextFunction) {
+        console.debug(`Redis [inMemoryCache] key \'${req.originalUrl}\'`);
         var client: RedisClient;
         try {
             client = new RedisClient({host: 'localhost', port: 6379});
 
-            if(client.exists(req.params.id) === true) {
+            if(client.exists(req.params?.id+'') == true) {
                 client.get(req.params.id, (error, reply) => {            
                     res.json(jsonResponse.createData(reply));
                 });
-            } else if(client.exists(req.url) === true) {
-                client.get(req.params.id, (error, reply) => {
-                    res.json(jsonResponse.createData(reply));
+            } else if(client.exists(req.originalUrl,) == true) {
+                client.get(req.originalUrl, (error, reply) => {
+                    res.json(reply);
                 });
             } else {
                 next();
@@ -140,6 +141,7 @@ export function PublishWebAPI(app: Application) : void {
     app.use(inMemoryCache);
 
     router.get('/categories', jsonBodyParser, async (req,res) => {
+        console.debug(`GET: ${req.url}`);        
         res.status(200);
 
         var client: RedisClient;
@@ -149,8 +151,8 @@ export function PublishWebAPI(app: Application) : void {
 
             try {// Caching Data
                 client = new RedisClient({host: 'localhost', port: 6379});
-                client.set(req.url, jsonData);
-                client.expire(req.url, 60/*seconds*/*10);
+                client.set(req.originalUrl, jsonData+'');
+                client.expire(req.originalUrl, 60/*seconds*/*10);
             } catch(error) {
                 console.log(error);
             } finally {
