@@ -124,7 +124,7 @@ export function PublishWebAPI(app: Application) : void {
                 client.get(req.params.id, (error, reply) => {            
                     res.json(jsonResponse.createData(reply));
                 });
-            } else if(client.exists(req.originalUrl,) == true) {
+            } else if(client.exists(req.originalUrl) == true) {
                 client.get(req.originalUrl, (error, reply) => {
                     res.json(reply);
                 });
