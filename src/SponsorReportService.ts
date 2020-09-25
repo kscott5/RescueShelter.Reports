@@ -91,7 +91,7 @@ export function PublishWebAPI(app: Application) : void {
                 client.get(req.params.id, (error, reply) => {            
                     res.json(jsonResponse.createData(JSON.parse(reply)));
                 });
-            } else if(client.exists(req.originalUrl) === true) {
+            } else if(client.exists(req.originalUrl, redis.print) === true) {
                 client.get(req.originalUrl, (error, reply) => {
                     res.json(jsonResponse.createData(JSON.parse(reply)));
                 });
@@ -101,7 +101,7 @@ export function PublishWebAPI(app: Application) : void {
         } catch(error) {            
             next();
         } finally {
-            client?.quit();
+            client?.quit(redis.print);
         }
     } // inMemoryCache
     
@@ -123,7 +123,7 @@ export function PublishWebAPI(app: Application) : void {
             } catch(error) {
                 console.log(error);
             } finally {
-                client?.quit();
+                client?.quit(redis.print);
                 res.json(jsonData);
             }
         } catch(error) {
@@ -145,6 +145,7 @@ export function PublishWebAPI(app: Application) : void {
 
             var client: redis.RedisClient;
             try { // Data caching
+                client = new redis.RedisClient({host: 'localhost', port: 6379});
                 client.set(req.originalUrl, JSON.stringify(jsonData), redis.print);
                 client.expire(req.originalUrl, 60/*seconds*/*10, redis.print);
             } catch(error) {
