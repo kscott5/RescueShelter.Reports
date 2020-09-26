@@ -117,27 +117,26 @@ export function PublishWebAPI(app: Application) : void {
 
     const ANIMAL_ROUTER_BASE_URL = '/api/report/animals/';
     async function AnimalRedisMiddleware(req: Request, res: Response, next: NextFunction) {
-        console.debug(`Redis [Animal: inMemoryCache] key \'${req.originalUrl}\'`);
-        
         if(req.originalUrl.startsWith(ANIMAL_ROUTER_BASE_URL) === true) {
+            console.debug(`Redis [Animal: inMemoryCache] key \'${req.originalUrl}\'`);        
+                        
             var client: redis.RedisClient;
-
             try { // Reading data from Redis in memory cache
                 client = new redis.RedisClient({host: 'localhost', port: 6379});
 
-                var asynExists = util.promisify(client.exists).bind(client);
-                var asynGet = util.promisify(client.get).bind(client);
-
-                if(await asynExists(req.params?.id+'', redis.print) == true) {
+                var asyncExists = util.promisify(client.exists).bind(client);
+                var asyncGet = util.promisify(client.get).bind(client);
+                
+                if(await asyncExists(req.params?.id+'', redis.print) == true) {
                     res.status(200);
-                    await asynGet(req.params.id, (error, reply) => {            
+                    await asyncGet(req.params.id, (error, reply) => {            
                         res.json(JSON.parse(reply));
                     });
                     return;
 
-                } else if(await asynExists(req.originalUrl, redis.print) == true) {
+                } else if(await asyncExists(req.originalUrl, redis.print) == true) {
                     res.status(200);
-                    await asynGet(req.originalUrl).then(reply => {
+                    await asyncGet(req.originalUrl).then(reply => {
                         res.json(JSON.parse(reply));
                     });
                     return;
@@ -147,12 +146,12 @@ export function PublishWebAPI(app: Application) : void {
             } catch(error) { // Redis cache access
                 console.log(error); 
             } finally {
-                client?.quit(redis.print);
-            }
-        } // if express animal router
+                await client?.quit(redis.print);
+            } // try-catch-finally
+        } // end if express base router url is ANIMAL_ROUTER_BASE_URL
 
         next(); // middleware
-    } // AnimalRedisMiddleware
+    } // end AnimalRedisMiddleware
     
     app.use(AnimalRedisMiddleware);
 
