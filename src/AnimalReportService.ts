@@ -181,7 +181,7 @@ export function PublishWebAPI(app: Application) : void {
 
             try { // Caching Data
                 const client = new redis.RedisClient({host: 'localhost', port: 6379});
-                client.set(req.originalUrl, jsonData, (error,reply) =>{
+                client.set(req.originalUrl, JSON.stringify(jsonData), (error,reply) => {
                     console.debug(`Redis set \'${req.originalUrl}\' ${(error || '+'.concat(reply))}`);
                 });
                 client.expire(req.url, 60/*seconds*/*10);
@@ -211,7 +211,7 @@ export function PublishWebAPI(app: Application) : void {
 
             try { // Caching Data
                 const client = new redis.RedisClient({host: 'localhost', port: 6379});
-                client.set(req.url, jsonData, (error,reply) => {
+                client.set(req.url, JSON.stringify(jsonData), (error,reply) => {
                     console.debug(`Redis set \'${req.originalUrl}\' ${(error || '+'.concat(reply))}`);
                 });
                 client.expire(req.url, 60/*seconds*/*10);
