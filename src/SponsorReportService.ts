@@ -62,22 +62,19 @@ export function PublishWebAPI(app: Application) : void {
     let jsonResponse = new CoreServices.JsonResponse();
 
     let db = new SponsorReaderDb();
-
-    try {
-        (new redis.RedisClient({host: 'localhost', port: 6379}))?.quit();
-    } catch(error) {
-        console.log('**************These projects are professional entertainment***************')
-        console.log('The following command configures an out of process Redis.io memory cache.');
-        console.log('In process requires Redis.io install in the process of RescueShelter.Reports.');
-        console.log('\n');
-        console.log('docker run -it -p 127.0.0.1:6379:6379 --name redis_dev redis-server --loglevel debug');
-        console.log('\n\n\n');
-        console.log('Terminal/shell access use:> telnet 127.0.0.1 6379');
-        console.log('set \'foo\' \'bar\''); // server response is +OK
-        console.log('get \'foo\''); // server response is $4 bar
-        console.log('quit'); //exit telnet sessions
-    }
-
+    const client = new redis.RedisClient({host: 'localhost', port: 6379});
+    
+    console.log('**************These projects are professional entertainment***************')
+    console.log('The following command configures an out of process Redis.io memory cache.');
+    console.log('In process requires Redis.io install in the process of RescueShelter.Reports.');
+    console.log('\n');
+    console.log('docker run -it -p 127.0.0.1:6379:6379 --name redis_dev redis-server --loglevel debug');
+    console.log('\n\n\n');
+    console.log('Terminal/shell access use:> telnet 127.0.0.1 6379');
+    console.log('set \'foo\' \'bar\''); // server response is +OK
+    console.log('get \'foo\''); // server response is $4 bar
+    console.log('quit'); //exit telnet sessions
+    
     const SPONSORS_ROUTER_BASE_URL = '/api/report/sponsors';
     function SponsorsRedisMiddleware(req: Request, res: Response, next: NextFunction) {
         if(req.originalUrl.startsWith(SPONSORS_ROUTER_BASE_URL) !== true) {
@@ -86,9 +83,7 @@ export function PublishWebAPI(app: Application) : void {
             return;
         }
     
-        try { // Reading data from Redis in memory cache
-            const client = new redis.RedisClient({host: 'localhost', port: 6379});
-            
+        try { // Reading data from Redis in memory cache            
             client.get(req.originalUrl, (error, reply) => {                    
                 if(reply !== null) {
                     console.debug(`SponsorsRedisMiddleware get \'${req.originalUrl}\' +OK`);                      
@@ -102,8 +97,7 @@ export function PublishWebAPI(app: Application) : void {
         } catch(error) { // Redis cache access  
             console.debug(error);
             next();
-        } // try-catch-finally
-        
+        } // try-catch        
     } // end SponsorsRedisMiddleware
     
     app.use(SponsorsRedisMiddleware);
@@ -117,7 +111,6 @@ export function PublishWebAPI(app: Application) : void {
             var jsonData = jsonResponse.createData(data);
 
             try { // Data Caching
-                const client = new redis.RedisClient({host: 'localhost', port: 6379})
                 client.set(req.originalUrl, JSON.stringify(jsonData), (error,reply) => {
                     console.debug(`Redis set \'${req.originalUrl}\' ${(error || '+'.concat(reply))}`);
                 });
@@ -145,7 +138,6 @@ export function PublishWebAPI(app: Application) : void {
             var jsonData = jsonResponse.createPagination(data, 1, page);
 
             try { // Data caching
-                const client = new redis.RedisClient({host: 'localhost', port: 6379});
                 client.set(req.originalUrl, JSON.stringify(jsonData), (error, reply) => {
                     console.debug(`Redis set \'${req.originalUrl}\' ${(error || '+'.concat(reply))}`);
                 });

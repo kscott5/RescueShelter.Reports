@@ -100,20 +100,18 @@ export function PublishWebAPI(app: Application) : void {
 
     let db = new AnimalReaderDb();
 
-    try {
-        (new redis.RedisClient({host: 'localhost', port: 6379}))?.quit();
-    } catch(error) {
-        console.log('**************These projects are professional entertainment***************')
-        console.log('The following command configures an out of process Redis.io memory cache.');
-        console.log('In process requires Redis.io install in the process of RescueShelter.Reports.');
-        console.log('\n');
-        console.log('docker run -it -p 127.0.0.1:6379:6379 --name redis_dev redis-server --loglevel debug');
-        console.log('\n\n\n');
-        console.log('Terminal/shell access use:> telnet 127.0.0.1 6379');
-        console.log('set \'foo\' \'bar\''); // server response is +OK
-        console.log('get \'foo\''); // server response is $4 bar
-        console.log('quit'); //exit telnet sessions
-    }
+    const client = new redis.RedisClient({host: 'localhost', port: 6379});
+
+    console.log('**************These projects are professional entertainment***************')
+    console.log('The following command configures an out of process Redis.io memory cache.');
+    console.log('In process requires Redis.io install in the process of RescueShelter.Reports.');
+    console.log('\n');
+    console.log('docker run -it -p 127.0.0.1:6379:6379 --name redis_dev redis-server --loglevel debug');
+    console.log('\n\n\n');
+    console.log('Terminal/shell access use:> telnet 127.0.0.1 6379');
+    console.log('set \'foo\' \'bar\''); // server response is +OK
+    console.log('get \'foo\''); // server response is $4 bar
+    console.log('quit'); //exit telnet sessions
 
     const ANIMAL_ROUTER_BASE_URL = '/api/report/animals';
     async function AnimalsRedisMiddleware(req: Request, res: Response, next: NextFunction) {
@@ -123,7 +121,6 @@ export function PublishWebAPI(app: Application) : void {
         }
                 
         try { // Reading data from Redis in memory cache
-            const client = new redis.RedisClient({host: 'localhost', port: 6379});
             client.get(req.originalUrl, (error,reply) => {
                 if(reply !== null) {
                     console.debug(`AnimalsRedisMiddleware get \'${req.originalUrl}\' +OK`);                      
@@ -152,7 +149,6 @@ export function PublishWebAPI(app: Application) : void {
 
             var client: redis.RedisClient;
             try {// Caching Data
-                client = new redis.RedisClient({host: 'localhost', port: 6379});
                 client.set(req.originalUrl, JSON.stringify(jsonData), (error,reply) => {
                     console.debug(`Redis set \'${req.originalUrl}\' ${(error || '+'.concat(reply))}`);
                 });
@@ -180,7 +176,6 @@ export function PublishWebAPI(app: Application) : void {
             var jsonData = jsonResponse.createPagination(data,1,page);
 
             try { // Caching Data
-                const client = new redis.RedisClient({host: 'localhost', port: 6379});
                 client.set(req.originalUrl, JSON.stringify(jsonData), (error,reply) => {
                     console.debug(`Redis set \'${req.originalUrl}\' ${(error || '+'.concat(reply))}`);
                 });
@@ -210,7 +205,6 @@ export function PublishWebAPI(app: Application) : void {
             var jsonData = jsonResponse.createData(data);
 
             try { // Caching Data
-                const client = new redis.RedisClient({host: 'localhost', port: 6379});
                 client.set(req.url, JSON.stringify(jsonData), (error,reply) => {
                     console.debug(`Redis set \'${req.originalUrl}\' ${(error || '+'.concat(reply))}`);
                 });
