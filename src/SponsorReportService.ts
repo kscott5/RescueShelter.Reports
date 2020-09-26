@@ -78,38 +78,34 @@ export function PublishWebAPI(app: Application) : void {
         console.log('quit'); //exit telnet sessions
     }
 
-    const SPONSORS_ROUTER_BASE_URL = '/api/report/sponsors/';
-    async function inMemoryCache(req: Request, res: Response, next: NextFunction) {
-        if(req.originalUrl.startsWith(SPONSORS_ROUTER_BASE_URL) === false) 
+    const SPONSORS_ROUTER_BASE_URL = '/api/report/sponsors';
+    function SponsorsRedisMiddleware(req: Request, res: Response, next: NextFunction) {
+        if(req.originalUrl.startsWith(SPONSORS_ROUTER_BASE_URL) !== true) {
+            console.debug(`SponsorsRedisMiddleware get \'${req.originalUrl}\' not supported`);
             next();
-
-        console.debug(`Redis [Sponsors: inMemoryCache] key \'${req.originalUrl}\'`);
-    
-        var client: redis.RedisClient;
-        try {
-            client = new redis.RedisClient({host: 'localhost', port: 6379});
-
-            if(client.exists(req.params?.id+'', redis.print) === true) {
-                res.status(200);
-                client.get(req.params.id, (error, reply) => {            
-                    res.json(jsonResponse.createData(JSON.parse(reply)));
-                });
-            } else if(client.exists(req.originalUrl, redis.print) === true) {
-                res.status(200);
-                client.get(req.originalUrl, (error, reply) => {
-                    res.json(jsonResponse.createData(JSON.parse(reply)));
-                });
-            } else {
-                next();
-            }
-        } catch(error) {            
-            next();
-        } finally {
-            client?.quit(redis.print);
+            return;
         }
-    } // inMemoryCache
     
-    app.use(inMemoryCache);
+        try { // Reading data from Redis in memory cache
+            const client = new redis.RedisClient({host: 'localhost', port: 6379});
+            client.get(req.originalUrl, (error, reply) => {                    
+                if(reply !== null) {
+                    console.debug(`SponsorsRedisMiddleware get \'${req.originalUrl}\' +OK`);                      
+                    res.status(200);
+                    res.json(JSON.parse(reply));
+                } else {
+                    console.debug(`SponsorsRedisMiddleware get \'${req.originalUrl}\' ${(error || 'not available')}`);                      
+                    next();
+                }
+            });
+        } catch(error) { // Redis cache access  
+            console.debug(error);
+            next();
+        } // try-catch-finally
+        
+    } // end SponsorsRedisMiddleware
+    
+    app.use(SponsorsRedisMiddleware);
 
     router.get("/:id", async (req,res) => {
         console.debug(`GET [:id]: ${req.originalUrl}`);
@@ -119,15 +115,15 @@ export function PublishWebAPI(app: Application) : void {
             var data = await db.getSponsor(req.params.id);
             var jsonData = jsonResponse.createData(data);
 
-            var client: redis.RedisClient;
             try { // Data Caching
-                client = new redis.RedisClient({host: 'localhost', port: 6379})
-                client.set(req.originalUrl, JSON.stringify(jsonData), redis.print);
-                client.expire(req.originalUrl, 60/*seconds*/*10), redis.print;
+                const client = new redis.RedisClient({host: 'localhost', port: 6379})
+                client.set(req.originalUrl, JSON.stringify(jsonData), (error,reply) => {
+                    console.debug(`Redis set \'${req.originalUrl}\' ${(error || '+'.concat(reply))}`);
+                });
+                client.expire(req.originalUrl, 60/*seconds*/*10);
             } catch(error) {
                 console.log(error);
             } finally {
-                client?.quit(redis.print);
                 res.json(jsonData);
             }
         } catch(error) {
@@ -147,15 +143,15 @@ export function PublishWebAPI(app: Application) : void {
             var data = await db.getSponsors(page,limit,phrase);
             var jsonData = jsonResponse.createPagination(data, 1, page);
 
-            var client: redis.RedisClient;
             try { // Data caching
-                client = new redis.RedisClient({host: 'localhost', port: 6379});
-                client.set(req.originalUrl, JSON.stringify(jsonData), redis.print);
-                client.expire(req.originalUrl, 60/*seconds*/*10, redis.print);
+                const client = new redis.RedisClient({host: 'localhost', port: 6379});
+                client.set(req.originalUrl, JSON.stringify(jsonData), (error, reply) => {
+                    console.debug(`Redis set \'${req.originalUrl}\' ${(error || '+'.concat(reply))}`);
+                });
+                client.expire(req.originalUrl, 60/*seconds*/*10);
             } catch(error) {
                 console.log(error);
             } finally {
-                client?.quit();
                 res.json(jsonData);
             }
         } catch(error) {
@@ -163,5 +159,6 @@ export function PublishWebAPI(app: Application) : void {
         }
     });
 
-    app.use(SPONSORS_ROUTER_BASE_URL, router);
+    // string.concat('/') is an express HACK. req.originalUrl.startsWith(SPONSORS_ROUTER_BASE_URL)
+    app.use(SPONSORS_ROUTER_BASE_URL.concat('/'), router);
 } // end publishWebAPI
