@@ -62,7 +62,7 @@ export function PublishWebAPI(app: Application) : void {
     let jsonResponse = new CoreServices.JsonResponse();
 
     let db = new SponsorReaderDb();
-    const client = new redis.RedisClient({host: 'localhost', port: 6379});
+    const client = redis.createClient({});
     
     console.log('**************These projects are professional entertainment***************')
     console.log('The following command configures an out of process Redis.io memory cache.');

@@ -100,7 +100,7 @@ export function PublishWebAPI(app: Application) : void {
 
     let db = new AnimalReaderDb();
 
-    const client = new redis.RedisClient({host: 'localhost', port: 6379});
+    const client = new redis.RedisClient({});
 
     console.log('**************These projects are professional entertainment***************')
     console.log('The following command configures an out of process Redis.io memory cache.');
