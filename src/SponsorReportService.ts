@@ -88,6 +88,8 @@ export function PublishWebAPI(app: Application) : void {
     
         try { // Reading data from Redis in memory cache
             const client = new redis.RedisClient({host: 'localhost', port: 6379});
+            
+            client.exists(req.originalUrl); // Synchronizes memory with this RedisClient instance, and avoids next()
             client.get(req.originalUrl, (error, reply) => {                    
                 if(reply !== null) {
                     console.debug(`SponsorsRedisMiddleware get \'${req.originalUrl}\' +OK`);                      
