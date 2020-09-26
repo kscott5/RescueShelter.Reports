@@ -115,45 +115,32 @@ export function PublishWebAPI(app: Application) : void {
         console.log('quit'); //exit telnet sessions
     }
 
-    const ANIMAL_ROUTER_BASE_URL = '/api/report/animals/';
-    async function AnimalRedisMiddleware(req: Request, res: Response, next: NextFunction) {
-        if(req.originalUrl.startsWith(ANIMAL_ROUTER_BASE_URL) === true) {
-            console.debug(`Redis [Animal: inMemoryCache] key \'${req.originalUrl}\'`);        
-                        
-            var client: redis.RedisClient;
-            try { // Reading data from Redis in memory cache
-                client = new redis.RedisClient({host: 'localhost', port: 6379});
-
-                var asyncExists = util.promisify(client.exists).bind(client);
-                var asyncGet = util.promisify(client.get).bind(client);
+    const ANIMAL_ROUTER_BASE_URL = '/api/report/animals';
+    async function AnimalsRedisMiddleware(req: Request, res: Response, next: NextFunction) {
+        if(req.originalUrl.startsWith(ANIMAL_ROUTER_BASE_URL) !== true) {
+            next();
+            return;
+        }
                 
-                if(await asyncExists(req.params?.id+'', redis.print) == true) {
+        try { // Reading data from Redis in memory cache
+            const client = new redis.RedisClient({host: 'localhost', port: 6379});
+            client.get(req.originalUrl, (error,reply) => {
+                if(reply !== null) {
+                    console.debug(`AnimalsRedisMiddleware get \'${req.originalUrl}\' +OK`);                      
                     res.status(200);
-                    await asyncGet(req.params.id, (error, reply) => {            
-                        res.json(JSON.parse(reply));
-                    });
-                    return;
-
-                } else if(await asyncExists(req.originalUrl, redis.print) == true) {
-                    res.status(200);
-                    await asyncGet(req.originalUrl).then(reply => {
-                        res.json(JSON.parse(reply));
-                    });
-                    return;
-                    
-                } // end if key exist check
-
-            } catch(error) { // Redis cache access
-                console.log(error); 
-            } finally {
-                await client?.quit(redis.print);
-            } // try-catch-finally
-        } // end if express base router url is ANIMAL_ROUTER_BASE_URL
-
-        next(); // middleware
-    } // end AnimalRedisMiddleware
+                    res.json(JSON.parse(reply));
+                } else {
+                    console.debug(`AnimalsRedisMiddleware get \'${req.originalUrl}\' ${(error || 'not available')}`);                      
+                    next();
+                }
+            });
+        } catch(error) { // Redis cache access  
+            console.debug(error);
+            next();
+        } // try-catch
+    } // end AnimalsRedisMiddleware
     
-    app.use(AnimalRedisMiddleware);
+    app.use(AnimalsRedisMiddleware);
 
     router.get('/categories', jsonBodyParser, async (req,res) => {
         console.debug(`GET: ${req.url}`);        
@@ -166,9 +153,10 @@ export function PublishWebAPI(app: Application) : void {
             var client: redis.RedisClient;
             try {// Caching Data
                 client = new redis.RedisClient({host: 'localhost', port: 6379});
-                client.set(req.originalUrl, JSON.stringify(jsonData), redis.print );
-                client.expire(req.originalUrl, 60/*seconds*/*10, redis.print);
-                client.quit(redis.print);
+                client.set(req.originalUrl, JSON.stringify(jsonData), (error,reply) => {
+                    console.debug(`Redis set \'${req.originalUrl}\' ${(error || '+'.concat(reply))}`);
+                });
+                client.expire(req.originalUrl, 60/*seconds*/*10);
             } catch(error) {
                 console.log(error);
             } finally {                
@@ -180,7 +168,7 @@ export function PublishWebAPI(app: Application) : void {
     }); // end animals categories
 
     router.get("/", jsonBodyParser, async (req,res) => {
-        console.debug(`GET: ${req.url}`);        
+        console.debug(`GET: ${req.originalUrl}`);        
         var page = Number.parseInt(req.query["page"] as any || 1); 
         var limit = Number.parseInt(req.query["limit"] as any || 5);
         var phrase = req.query["phrase"] as string || '';
@@ -191,12 +179,12 @@ export function PublishWebAPI(app: Application) : void {
             var data = await db.getAnimals(page, limit, phrase);
             var jsonData = jsonResponse.createPagination(data,1,page);
 
-            var client: redis.RedisClient;
             try { // Caching Data
-                client = new redis.RedisClient({host: 'localhost', port: 6379});
-                client.set(req.url, jsonData, redis.print);
-                client.expire(req.url, 60/*seconds*/*10, redis.print);
-                client.quit(redis.print);
+                const client = new redis.RedisClient({host: 'localhost', port: 6379});
+                client.set(req.originalUrl, jsonData, (error,reply) =>{
+                    console.debug(`Redis set \'${req.originalUrl}\' ${(error || '+'.concat(reply))}`);
+                });
+                client.expire(req.url, 60/*seconds*/*10);
             } catch(error) {
                 console.log(error);
             } finally {
@@ -208,7 +196,7 @@ export function PublishWebAPI(app: Application) : void {
     }); //end animals
 
     router.get('/:id', jsonBodyParser, async (req,res) => {
-        console.debug(`GET: ${req.url}`);
+        console.debug(`GET: ${req.originalUrl}`);
         if (!req.params.id) {
             res.status(404);
             res.send("HttpGET id not available");
@@ -221,12 +209,12 @@ export function PublishWebAPI(app: Application) : void {
             var data = await db.model.findById(req.params.id);
             var jsonData = jsonResponse.createData(data);
 
-            var client: redis.RedisClient;
             try { // Caching Data
-                client = new redis.RedisClient({host: 'localhost', port: 6379});
-                client.set(req.url, jsonData, redis.print);
-                client.expire(req.url, 60/*seconds*/*10, redis.print);
-                client.quit(redis.print);
+                const client = new redis.RedisClient({host: 'localhost', port: 6379});
+                client.set(req.url, jsonData, (error,reply) => {
+                    console.debug(`Redis set \'${req.originalUrl}\' ${(error || '+'.concat(reply))}`);
+                });
+                client.expire(req.url, 60/*seconds*/*10);
             } catch(error) {
                 console.log(error);
             } finally {
@@ -238,5 +226,6 @@ export function PublishWebAPI(app: Application) : void {
         }
     }); // end animal with id
 
-    app.use(ANIMAL_ROUTER_BASE_URL, router);
+    // string.concat('/') is an express HACK. req.originalUrl.startsWith(SPONSORS_ROUTER_BASE_URL)
+    app.use(ANIMAL_ROUTER_BASE_URL.concat('/'), router);
 } // end PublishWebAPI
