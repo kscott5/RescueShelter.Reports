@@ -7,6 +7,9 @@ LABEL "description" "Rescue Shelter Reports gives readonly access"
 
 ENV "NODE_ENV" "production"
 
+run apt-get update
+run apt-get install redis-server redis-tools
+
 WORKDIR /home
 
 COPY ./dist/*.js    ./
