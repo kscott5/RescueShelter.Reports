@@ -1,4 +1,4 @@
-FROM node:latest
+FROM node:alpine
 
 LABEL "version" "1.0.0"
 LABEL "contributors" "@kscott5"
@@ -9,8 +9,7 @@ ENV "NODE_ENV" "production"
 
 WORKDIR /home
 
-RUN apt-get update
-RUN apt-get install redis-server redis-tools
+RUN apk add git
 RUN git clone https://github.com/kscott5/rescueShelter.reports.git
 
 WORKDIR /home/rescueshelter.reports
