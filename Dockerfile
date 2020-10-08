@@ -9,16 +9,22 @@ ENV "NODE_ENV" "production"
 
 WORKDIR /home
 
+# https://github.com/nodejs/node-gyp
 RUN apk add make
 # OK: 65 MiB in 32 packages
 
 RUN apk add g++
-#
+# OK: 229 MiB in 43 packages
+# apk del g++ only removes 1/4 of total (229 MiB)
+
 RUN apk add python
 # OK: 65 MiB in 31 packages
 
 RUN apk add redis
 # OK: 25 MiB in 23 packages
+
+# requires make g++ python
+RUN npm install --global node-gyp
 
 RUN apk add git
 # OK: 23 MiB in 22 packages
@@ -28,7 +34,7 @@ RUN git clone https://github.com/kscott5/rescueShelter.reports.git
 
 WORKDIR /home/rescueshelter.reports
 
-# Install package.json dependencies
+# requires node-gyp
 RUN npm install
 RUN npm run compile
 
