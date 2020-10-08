@@ -9,8 +9,22 @@ ENV "NODE_ENV" "production"
 
 WORKDIR /home
 
+RUN apk add make
+# OK: 65 MiB in 32 packages
+
+RUN apk add g++
+#
+RUN apk add python
+# OK: 65 MiB in 31 packages
+
+RUN apk add redis
+# OK: 25 MiB in 23 packages
+
 RUN apk add git
+# OK: 23 MiB in 22 packages
+
 RUN git clone https://github.com/kscott5/rescueShelter.reports.git
+# Receiving objects: 100% (360/360), 1.51 MiB | 16.00 KiB/s, done.
 
 WORKDIR /home/rescueshelter.reports
 
