@@ -23,7 +23,8 @@
     "watch": "yarn run clean & tsc -p tsconfig.json --watch",
     "mongo": "docker run -p 27017:27017 --rm --name mongo_dev mongo mongod",
     "dataset": "python ./rescueshelter.services/sample.data.py",
-    "start": "node ./dist/index.js"
+    "start": "node ./dist/index.js",
+    "docker": "docker build --tag rescueshelter.report:latest"
   },
   "devDependencies": {
     "@types/blake2": "^4.0.0",
