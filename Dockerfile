@@ -1,4 +1,4 @@
-FROM node:alpine
+FROM node:latest
 
 LABEL "version" "1.0.0"
 LABEL "contributors" "@kscott5"
@@ -7,17 +7,17 @@ LABEL "description" "Rescue Shelter Reports gives readonly access"
 
 ENV "NODE_ENV" "production"
 
-run apt-get update
-run apt-get install redis-server redis-tools
-
 WORKDIR /home
 
-COPY ./dist/*.js    ./
-COPY ./dist/*.map   ./
-COPY ./package.json ./
+RUN apt-get update
+RUN apt-get install redis-server redis-tools
+RUN git clone https://github.com/kscott5/rescueShelter.reports.git
+
+WORKDIR /home/rescueshelter.reports
 
 # Install package.json dependencies
 RUN npm install
+RUN npm run compile
 
 # The docker documentation states if any container uses 
 #       docker run --network rescueshelter --ip some_ip_range_id ...
