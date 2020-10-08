@@ -15,7 +15,8 @@
     "mongoose": "^5.9.24",
     "morgan": "^1.10.0",
     "redis": "^3.0.2",
-    "rescueshelter.core": "^1.0.3"
+    "rescueshelter.core": "^1.0.3",
+    "winston": "^3.3.3"
   },
   "scripts": {
     "clean": "rm -r -f ./dist",
