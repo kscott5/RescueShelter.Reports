@@ -26,10 +26,6 @@ RUN apk add redis
 # requires make g++ python
 RUN npm install --global node-gyp
 
-# http://expressjs.com/en/advanced/best-practice-performance.html
-# https://pm2.keymetrics.io/docs/usage/cluster-mode/
-RUN npm install --global pm2@latest
-
 RUN apk add git
 # OK: 23 MiB in 22 packages
 
