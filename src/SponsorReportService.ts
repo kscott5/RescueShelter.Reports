@@ -91,7 +91,7 @@ export function PublishWebAPI(app: Application) : void {
                     res.status(200);
                     res.json(JSON.parse(reply));
                 } else {
-                    console.debug(`Redis get \'${req.originalUrl}\' ${error || 'not available'}`);
+                    console.debug(`Redis get \'${req.originalUrl}\' ${error || 'NOT AVAILABLE'}`);
                     next();
                 } 
             });
