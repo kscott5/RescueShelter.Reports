@@ -64,91 +64,80 @@ export function PublishWebAPI(app: Application) : void {
     let db = new SponsorReaderDb();
     const client = redis.createClient({});
     
-    console.log('**************These projects are professional entertainment***************')
-    console.log('The following command configures an out of process Redis.io memory cache.');
-    console.log('In process requires Redis.io install in the process of RescueShelter.Reports.');
-    console.log('\n');
-    console.log('docker run -it -p 127.0.0.1:6379:6379 --name redis_dev redis-server --loglevel debug');
-    console.log('\n\n\n');
-    console.log('Terminal/shell access use:> telnet 127.0.0.1 6379');
-    console.log('set \'foo\' \'bar\''); // server response is +OK
-    console.log('get \'foo\''); // server response is $4 bar
-    console.log('quit'); //exit telnet sessions
-    
+    /**
+     * @description Adds Redis cache data with expiration
+     * @param {string} key: request original url
+     * @param {object} value: actual data
+     */
+    async function cacheData(key: string, value: any) {    
+        if(await Promise.resolve(client.set(key, JSON.stringify(value))) &&
+            await Promise.resolve(client.expire(key, 60/*seconds*/*10))) {
+            console.debug(`Redis set \'${key}\' +OK`);
+        }
+    }
+
     const SPONSORS_ROUTER_BASE_URL = '/api/report/sponsors';
-    function SponsorsRedisMiddleware(req: Request, res: Response, next: NextFunction) {
+    async function SponsorsRedisMiddleware(req: Request, res: Response, next: NextFunction) {
+        // NOTE: Separation of concerns.
         if(req.originalUrl.startsWith(SPONSORS_ROUTER_BASE_URL) !== true) {
-            console.debug(`SponsorsRedisMiddleware get \'${req.originalUrl}\' not supported`);
             next();
             return;
         }
-    
+                
         try { // Reading data from Redis in memory cache            
-            client.get(req.originalUrl, (error, reply) => {                    
-                if(reply !== null) {
-                    console.debug(`SponsorsRedisMiddleware get \'${req.originalUrl}\' +OK`);                      
+            client.get(req.originalUrl, (error,reply) => {
+                if(reply) {
+                    console.debug(`Redis get \'${req.originalUrl}\' +OK`);
                     res.status(200);
                     res.json(JSON.parse(reply));
                 } else {
-                    console.debug(`SponsorsRedisMiddleware get \'${req.originalUrl}\' ${(error || 'not available')}`);                      
+                    console.debug(`Redis get \'${req.originalUrl}\' ${error || 'not available'}`);
                     next();
-                }
+                } 
             });
         } catch(error) { // Redis cache access  
-            console.debug(error);
+            console.debug(`Redis error \'${req.originalUrl}\' ${error}`);
             next();
-        } // try-catch        
+        } // try-catch
     } // end SponsorsRedisMiddleware
-    
+
     app.use(SponsorsRedisMiddleware);
 
     router.get("/:id", async (req,res) => {
-        console.debug(`GET [:id]: ${req.originalUrl}`);
         res.status(200);
 
+        var jsonData;
         try {
             var data = await db.getSponsor(req.params.id);
-            var jsonData = jsonResponse.createData(data);
+            jsonData = jsonResponse.createData(data);
 
-            try { // Data Caching
-                client.set(req.originalUrl, JSON.stringify(jsonData), (error,reply) => {
-                    console.debug(`Redis set \'${req.originalUrl}\' ${(error || '+'.concat(reply))}`);
-                });
-                client.expire(req.originalUrl, 60/*seconds*/*10);
-            } catch(error) {
-                console.log(error);
-            } finally {
-                res.json(jsonData);
-            }
+            await cacheData(req.originalUrl, jsonData);
         } catch(error) {
-            res.json(jsonResponse.createError(error));
+            console.debug(`ERROR: Route get ${req.originalUrl} ${error}`);
+            jsonData = jsonData || jsonResponse.createError('Data not available');
+        } finally {
+            res.json(jsonData);
         }
     });
 
     router.get("/", async (req,res) => {
-        console.debug(`GET: ${req.originalUrl}`);
+        res.status(200);
+
         var page = Number.parseInt(req.query.page as any || 1); 
         var limit = Number.parseInt(req.query.limit as any || 5);
         var phrase = req.query.phrase as any || null;
 
-        res.status(200);
-
+        var jsonData;
         try {
             var data = await db.getSponsors(page,limit,phrase);
-            var jsonData = jsonResponse.createPagination(data, 1, page);
-
-            try { // Data caching
-                client.set(req.originalUrl, JSON.stringify(jsonData), (error, reply) => {
-                    console.debug(`Redis set \'${req.originalUrl}\' ${(error || '+'.concat(reply))}`);
-                });
-                client.expire(req.originalUrl, 60/*seconds*/*10);
-            } catch(error) {
-                console.log(error);
-            } finally {
-                res.json(jsonData);
-            }
+            
+            jsonData = jsonResponse.createPagination(data, 1, page);
+            await cacheData(req.originalUrl, jsonData);
         } catch(error) {
-            res.json(jsonResponse.createError(error));
+            console.debug(`ERROR: Route get ${req.originalUrl} ${error}`);
+            jsonData = jsonData || jsonResponse.createError('Data not available');
+        } finally {
+            res.json(jsonData);
         }
     });
 
