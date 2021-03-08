@@ -16,7 +16,7 @@
     "morgan": "^1.10.0",
     "pm2": "^4.5.0",
     "redis": "^3.0.2",
-    "rescueshelter.core": "^1.0.3",
+    "rescueshelter.core": "^1.0.8",
     "winston": "^3.3.3"
   },
   "scripts": {

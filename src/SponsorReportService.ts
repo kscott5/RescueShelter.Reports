@@ -37,7 +37,7 @@ class SponsorReaderDb {
 
     constructor() {
         this.__selectionFields =  "_id useremail username firstname lastname photo audit";
-        this.model = CoreServices.getModelReader(CoreServices.SPONSOR_MODEL_NAME);
+        this.model = CoreServices.getModel(CoreServices.SPONSOR_MODEL_NAME);
     }
 
     async getSponsor(id: String) : Promise<any>  {

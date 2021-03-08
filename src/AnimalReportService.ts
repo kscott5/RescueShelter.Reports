@@ -37,7 +37,7 @@ class AnimalReaderDb {
     private selectionFields;
 
     constructor() {
-        this.model = CoreServices.getModelReader(CoreServices.ANIMAL_MODEL_NAME);
+        this.model = CoreServices.getModel(CoreServices.ANIMAL_MODEL_NAME);
         this.selectionFields = '_id name description imageSrc sponsors';                
     }
 
@@ -149,7 +149,9 @@ export function PublishWebAPI(app: Application) : void {
             const data = await db.getCategories();
 
             jsonData = jsonResponse.createData(data);
-            await cacheData(req.originalUrl, jsonData);
+
+            if(jsonData.data?.length > 0)
+                await cacheData(req.originalUrl, jsonData);
 
         } catch(error) {
             console.debug(`ERROR: Route get ${req.originalUrl} ${error}`);
