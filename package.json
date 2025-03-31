@@ -14,22 +14,19 @@
     "helmet": "^3.23.3",
     "mongoose": "^8.13.0",
     "morgan": "^1.10.0",
-    "pm2": "^6.0.5",
     "redis": "^3.0.2",
     "rescueshelter.core": "^2.0.0",
     "winston": "^3.3.3"
   },
   "scripts": {
-    "gyp": "npm install node-gyp --global",
     "clean": "rm -r -f ./dist",
     "compile": "npm run clean & tsc -p tsconfig.json",
     "esbuild": "npm run clean && npx esbuild --bundle src/index.ts --outdir=./dist --platform=node --target=node21",
-    "watch": "npm run clean & tsc -p tsconfig.json --watch",
+    "watch": "npm run clean && npx esbuild --bundle src/index.ts --outdir=./dist --platform=node --target=node21 --watch",
     "mongo": "docker run -p 27017:27017 --rm --name mongo_dev mongo mongod",
     "redis": "docker run -it -p 127.0.0.1:6379:6379 --rm  --name redis_dev redis --loglevel debug",
     "dataset": "python ./datalake/src/rescueshelter/sample.data.py",
     "start": "node ./index.js",
-    "cluster": "pm2 start ./index.js -i max",
     "docker": "docker build --tag rescueshelter.report:latest ."
   },
   "devDependencies": {
