@@ -7,7 +7,7 @@
   "author": "Karega K. Scott",
   "license": "GPL-3.0-or-later",
   "dependencies": {
-    "blake2": "^4.0.1",
+    "blake2": "^5.0.0",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
