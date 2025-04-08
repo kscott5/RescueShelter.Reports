@@ -28,7 +28,7 @@ import bodyParser, { json } from "body-parser";
 import * as redis from "redis";
 import * as util from "util";
 
-import {CoreServices} from "rescueshelter.core";
+import {CoreServices, createLogService} from "rescueshelter.core";
 
 let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
 
@@ -49,7 +49,7 @@ class AnimalReaderDb {
 
     async getAnimals(page: Number = 1, limit: Number = 5, phrase?: String) : Promise<any> {
         var animalAggregate = (!phrase)? this.model.aggregate() :
-            this.model.aggregate().append({$match: {$text: {$search: phrase}}});
+        this.model.aggregate().append({$match: {$text: {$search: phrase}}});
                 
         var data = await animalAggregate.append([
             {

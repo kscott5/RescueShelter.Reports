@@ -8,4 +8,4 @@ let path = require("path");
 let staticPath = path.join(__dirname, '/../public');
 
 CoreServer.start('Rescue Shelter Report Services', 3303, 
-    [AnimalReportServices,SponsorReportServices], [], staticPath);
+    [AnimalReportServices,SponsorReportServices], [/* cors */ "http://localhost:3000"], staticPath);

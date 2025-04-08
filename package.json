@@ -15,7 +15,7 @@
     "mongoose": "^8.13.0",
     "morgan": "^1.10.0",
     "redis": "^3.0.2",
-    "rescueshelter.core": "^2.0.0",
+    "rescueshelter.core": "^2.0.2",
     "winston": "^3.3.3"
   },
   "scripts": {
@@ -27,6 +27,7 @@
     "redis": "docker run -it -p 127.0.0.1:6379:6379 --rm  --name redis_dev redis --loglevel debug",
     "dataset": "python ./datalake/src/rescueshelter/sample.data.py",
     "start": "node ./index.js",
+    "debug": "NODE_ENV='development' NODE_ENV_LOG_LEVEL='info,debug' NODE_ENV_LOG_DIR='./dist/logs' node ./index.js",
     "docker": "docker build --tag rescueshelter.report:latest ."
   },
   "devDependencies": {
@@ -48,3 +49,4 @@
     "index.js"
   ]
 }
+
