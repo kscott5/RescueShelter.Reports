@@ -1,46 +1,40 @@
 # Rescue Shelter Report Services  
-The creation of a report service or [git submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules) are additional effort for a simple project. However, it does provide new architectural challenges.  
-
-Removed submodule and opt-in with code structure, npm package registry, and package.json dependencies.
+The creation of a report service is seperation of concerns. The purpose is readonly data access api. This local development uses mongo and redis docker containers.
 
 
-The server should start on localhost port 3303.  
+### Use your prefered intergated development environment (IDE) or command line interpretor. But,
+an VScode-like IDE has a marketplace of extension and plugins in a GUI.
+```
+npm install --global esbuild typescript
+npm install --prefer-dedupe
+npm run tsbuild
+npm run mongo
+npm run redis
+docker ps -a
+npm run dataset
+npm debug
+```
+
+The server listens on localhost port 3303. Click the link a link below, after the `npm debug' command is done.
+
 [http://localhost:3303/api/report/animals](http://localhost:3303/api/report/animals)   
 [http://localhost:3303/api/report/sponsors](http://localhost:3303/api/report/sponsors)   
-[http://localhost:3303/api/report/secure](http://localhost:3303/api/report/secure)   
 
 
+### Don't forget the development tools. Look at the free documentation and download sections of 
 
-However, with nginx_dev docker instance access on port 80.   
-[http://localhost/api/report/animal](http://localhost/api/report/animals)   
-[http://localhost/api/report/sponsors](http://localhost/api/report/sponsors)   
+* [nodejs](https://nodejs.org) Javascript programming language.
+* [git](https://git-scm.com) Open source code repository and version management system.
+* [typescript](https://typescriptlang.org) Javascript transcompiler standards provider.
+* [esbuild](https://esbuild.io) A different Javasscript transcompiler standards provider.
+* [python](https://python.org) Programming and scripting language with good math support.
+* [docker](ttps://docker.com) Small, non window desktop, portable linux operating system.
+* [vscode](https://code.visualstudio.com) One of many IDEs.
 
-
-## Hint: docker commands
-```
-docker pull mongo
-docker pull nginx
-docker pull node
-docker run --name mongo_dev -p 27017:27017 mongo mongod
-docker run --name nginx_dev -p 80:80 nginx
-
-# find all configuration file and use docker cp
-find . -name '*.conf' -exec docker cp '{}' nginx_dev:/etc/nginx/conf.d/'{} \;
-
-# copy a single file using docker cp command
-docker cp services.nginx.conf nginx_dev:/etc/nginx/conf.d/rescueshelter.services.nginx.conf
-
-docker network create --driver=bridge --subnet 172.18.0.0/16 mongodb
-
-docker exec -it nginx_dev nginx -h
-docker exec -it nginx_dev nginx -T
-docker exec -it nginx_dev nginx -s reload
-```
-
-## [Generates sample data](https://github.com/kscott5/DataLake/blob/master/src/rescueshelter/sample.data.py) of 100k random animals and 10 authenticated sponsors with useremail and passwords. Execute after mongo_dev docker instance is available.
-```
-python sample.data.py
-```
+### Additional, production environment and support services with a free and paid services. 
+* [nginx](https://nginx.org) Web and proxy server.
+* [aws](https://aws.amazon.com) Amazon web services, cloud host provider.
+* [azure](https://azure.microsoft.com) Microsoft, cloud host provider
 
 
-### Absolutely should create a Dockerfile from nginx and copy configuration or source files
+## Comments, questions and advice is welcomed.
