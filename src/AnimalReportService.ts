@@ -94,35 +94,40 @@ class AnimalReaderDb {
 } // end AnimalReaderDb
 
 export function PublishWebAPI(app: Application) : void {
-    // Parser for various different custom JSON types as JSON
-    let jsonBodyParser = bodyParser.json({type: 'application/json'});
     let jsonResponse = new CoreServices.JsonResponse();            
-
-    let db = new AnimalReaderDb();
-
-    const client = new redis.RedisClient({});
 
     /**
      * @description Adds Redis cache data with expiration
      * @param {string} key: request original url
      * @param {object} value: actual data
      */
-    async function cacheData(key: string, value: any) {    
-        if(await Promise.resolve(client.set(key, JSON.stringify(value))) &&
-            await Promise.resolve(client.expire(key, 60/*seconds*/*10))) {
-            console.debug(`Redis set \'${key}\' +OK`);
+    async function cacheData(key: string, value: any) {  
+        try {
+            const client = new redis.RedisClient({});
+            if(client.connected == false) {
+                console.debug("Redis client not available");
+                return;
+            }
+
+            if(await Promise.resolve(client.set(key, JSON.stringify(value))) &&
+                await Promise.resolve(client.expire(key, 60/*seconds*/*10))) {
+                console.debug(`Redis set \'${key}\' +OK`);
+            }
+        } catch(error) {
+            console.debug(`Redis cache data: ${error}`);
         }
     }
 
     const ANIMAL_ROUTER_BASE_URL = '/api/report/animals';
     async function AnimalsRedisMiddleware(req: Request, res: Response, next: NextFunction) {
-        // NOTE: Separation of concerns.
-        if(req.originalUrl.startsWith(ANIMAL_ROUTER_BASE_URL) !== true) {
+        const client = new redis.RedisClient({});
+        if(req.originalUrl.startsWith(ANIMAL_ROUTER_BASE_URL) == false ||
+            client.connected == false) {
             next();
             return;
         }
-                
-        try { // Reading data from Redis in memory cache            
+
+        try { // Reading data from Redis in memory cache
             client.get(req.originalUrl, (error,reply) => {
                 if(reply) {
                     console.debug(`Redis get \'${req.originalUrl}\' +OK`);
@@ -130,22 +135,23 @@ export function PublishWebAPI(app: Application) : void {
                     res.json(JSON.parse(reply));
                 } else {
                     console.debug(`Redis get \'${req.originalUrl}\' ${error || 'NOT AVAILABLE'}`);
-                    next(); 
                 } 
             });
         } catch(error) { // Redis cache access  
             console.debug(`Redis error \'${req.originalUrl}\' ${error}`);
-            next();
         } // try-catch
+        next();
     } // end AnimalsRedisMiddleware
-    
+
+    app.use(bodyParser.json({type: 'application/json'}));
     app.use(AnimalsRedisMiddleware);
 
-    router.get('/categories', jsonBodyParser, async (req,res) => {
+    router.get('/categories', async (req,res) => {
         res.status(200);
 
         var jsonData;
-        try {            
+        try {
+            const db = new AnimalReaderDb();
             const data = await db.getCategories();
 
             jsonData = jsonResponse.createData(data);
@@ -161,7 +167,7 @@ export function PublishWebAPI(app: Application) : void {
         }
     }); // end animals categories
 
-    router.get("/", jsonBodyParser, async (req,res) => {
+    router.get("/", async (req,res) => {
         res.status(200);
         
         var page = Number.parseInt(req.query["page"] as any || 1); 
@@ -170,9 +176,10 @@ export function PublishWebAPI(app: Application) : void {
 
         var jsonData;
         try {
+            const db = new AnimalReaderDb();
             const data = await db.getAnimals(page, limit, phrase);
-            jsonData = jsonResponse.createPagination(data,1,page);
 
+            jsonData = jsonResponse.createPagination(data,1,page);
             await cacheData(req.originalUrl, jsonData);
 
         } catch(error) {
@@ -183,7 +190,7 @@ export function PublishWebAPI(app: Application) : void {
         }
     }); //end animals
 
-    router.get('/:id', jsonBodyParser, async (req,res) => {
+    router.get('/:id', async (req,res) => {
         res.status(200);
 
         if (!req.params.id) {
@@ -193,6 +200,7 @@ export function PublishWebAPI(app: Application) : void {
 
         var jsonData;
         try {
+            const db = new AnimalReaderDb();
             const data = await db.model.findById(req.params.id);
 
             jsonData = jsonResponse.createData(data);

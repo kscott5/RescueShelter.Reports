@@ -57,60 +57,68 @@ class SponsorReaderDb {
     } 
 } //end SponsorReaderDb class
 
-export function PublishWebAPI(app: Application) : void {
-    let jsonBodyParser = bodyParser.json({type: 'application/json'});
-    let jsonResponse = new CoreServices.JsonResponse();
-
-    let db = new SponsorReaderDb();
-    const client = redis.createClient({});
-    
+export function PublishWebAPI(app: Application) : void {   
     /**
      * @description Adds Redis cache data with expiration
      * @param {string} key: request original url
      * @param {object} value: actual data
      */
-    async function cacheData(key: string, value: any) {    
-        if(await Promise.resolve(client.set(key, JSON.stringify(value))) &&
-            await Promise.resolve(client.expire(key, 60/*seconds*/*10))) {
-            console.debug(`Redis set \'${key}\' +OK`);
+    async function cacheData(key: string, value: any) { 
+        try {
+            const client = redis.createClient({});            
+            if(client.connected == false) {
+                console.debug("Redis client not available");
+                return;
+            }
+
+            if(await Promise.resolve(client.set(key, JSON.stringify(value))) &&
+                await Promise.resolve(client.expire(key, 60/*seconds*/*10))) {
+                console.debug(`Redis set \'${key}\' +OK`);
+            }
+        } catch(error) {
+            console.debug(`Redis ache data: ${error}`);
         }
     }
 
     const SPONSORS_ROUTER_BASE_URL = '/api/report/sponsors';
     async function SponsorsRedisMiddleware(req: Request, res: Response, next: NextFunction) {
-        // NOTE: Separation of concerns.
-        if(req.originalUrl.startsWith(SPONSORS_ROUTER_BASE_URL) !== true) {
+        const client = redis.createClient({});
+        if(req.originalUrl.startsWith(SPONSORS_ROUTER_BASE_URL) == false ||
+            client.connected == false) {
             next();
             return;
         }
                 
-        try { // Reading data from Redis in memory cache            
+        try { // Reading data from Redis in memory cache
             client.get(req.originalUrl, (error,reply) => {
                 if(reply) {
                     console.debug(`Redis get \'${req.originalUrl}\' +OK`);
                     res.status(200);
                     res.json(JSON.parse(reply));
                 } else {
-                    console.debug(`Redis get \'${req.originalUrl}\' ${error || 'NOT AVAILABLE'}`);
-                    next();
+                    console.debug(`Redis get \'${req.originalUrl}\' ${error || 'NOT AVAILABLE'}`);                  
                 } 
             });
         } catch(error) { // Redis cache access  
             console.debug(`Redis error \'${req.originalUrl}\' ${error}`);
-            next();
         } // try-catch
+
+        next();
     } // end SponsorsRedisMiddleware
 
+    app.use(bodyParser.json({type: 'application/json'}));
     app.use(SponsorsRedisMiddleware);
 
     router.get("/:id", async (req,res) => {
+        const jsonResponse = new CoreServices.JsonResponse();
         res.status(200);
 
         var jsonData;
         try {
-            var data = await db.getSponsor(req.params.id);
-            jsonData = jsonResponse.createData(data);
+            const db = new SponsorReaderDb();
+            const data = await db.getSponsor(req.params.id);
 
+            jsonData = jsonResponse.createData(data);
             await cacheData(req.originalUrl, jsonData);
         } catch(error) {
             console.debug(`ERROR: Route get ${req.originalUrl} ${error}`);
@@ -121,6 +129,7 @@ export function PublishWebAPI(app: Application) : void {
     });
 
     router.get("/", async (req,res) => {
+        const jsonResponse = new CoreServices.JsonResponse();
         res.status(200);
 
         var page = Number.parseInt(req.query.page as any || 1); 
@@ -129,7 +138,8 @@ export function PublishWebAPI(app: Application) : void {
 
         var jsonData;
         try {
-            var data = await db.getSponsors(page,limit,phrase);
+            const db = new SponsorReaderDb();
+            const data = await db.getSponsors(page,limit,phrase);
             
             jsonData = jsonResponse.createPagination(data, 1, page);
             await cacheData(req.originalUrl, jsonData);
