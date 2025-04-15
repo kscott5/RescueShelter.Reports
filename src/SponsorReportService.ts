@@ -63,47 +63,60 @@ export function PublishWebAPI(app: Application) : void {
      * @param {string} key: request original url
      * @param {object} value: actual data
      */
-    async function cacheData(key: string, value: any) { 
-        try {
-            const client = redis.createClient({});            
-            if(client.connected == false) {
-                console.debug("Redis client not available");
-                return;
-            }
+    async function cacheData(key: string, value: any) {  
+        const client = new redis.RedisClient({});
 
+        let cacheDone = false;
+        client.on('error', (error) => {
+            if(cacheDone) return;
+
+            console.log(`Sponsor Cache Data ${error}:`);
+            cacheDone = true;
+            return;
+        });
+        
+        client.on('ready', async () => {
             if(await Promise.resolve(client.set(key, JSON.stringify(value))) &&
                 await Promise.resolve(client.expire(key, 60/*seconds*/*10))) {
                 console.debug(`Redis set \'${key}\' +OK`);
             }
-        } catch(error) {
-            console.debug(`Redis ache data: ${error}`);
-        }
+        });    
     }
 
     const SPONSORS_ROUTER_BASE_URL = '/api/report/sponsors';
     async function SponsorsRedisMiddleware(req: Request, res: Response, next: NextFunction) {
-        const client = redis.createClient({});
-        if(req.originalUrl.startsWith(SPONSORS_ROUTER_BASE_URL) == false ||
-            client.connected == false) {
+        if(req.originalUrl.startsWith(SPONSORS_ROUTER_BASE_URL) == false) {
             next();
             return;
         }
-                
-        try { // Reading data from Redis in memory cache
-            client.get(req.originalUrl, (error,reply) => {
-                if(reply) {
-                    console.debug(`Redis get \'${req.originalUrl}\' +OK`);
-                    res.status(200);
-                    res.json(JSON.parse(reply));
-                } else {
-                    console.debug(`Redis get \'${req.originalUrl}\' ${error || 'NOT AVAILABLE'}`);                  
-                } 
-            });
-        } catch(error) { // Redis cache access  
-            console.debug(`Redis error \'${req.originalUrl}\' ${error}`);
-        } // try-catch
+        const client = new redis.RedisClient({});
 
-        next();
+        let nextDone = false; 
+        client.on('error', (error) => {
+            if(nextDone) return; // redis max of n connection attemps.
+
+            console.debug(`Sponsor Middleware ${error}:`); // display once
+            nextDone = true;
+            next();
+        });
+
+        client.on('ready', () => {
+            console.debug(`Sponsor Middleware ready now`);
+        });
+
+        // Reading data from Redis in memory cache
+        client.get(req.originalUrl, (error,reply) => {
+            if(nextDone) { 
+                return; // next() where route process request without redis connection
+            } else if(reply)  {
+                console.debug(`Redis get \'${req.originalUrl}\' +OK`);
+                res.status(200);
+                res.json(JSON.parse(reply));
+            } else {
+                console.debug(`Redis get \'${req.originalUrl}\' ${error || 'NOT AVAILABLE'}`);
+                next();
+            } 
+        });
     } // end SponsorsRedisMiddleware
 
     app.use(bodyParser.json({type: 'application/json'}));

@@ -1,32 +1,6 @@
-// NOTE: 
-//       Report Services contains readonly data access, and should be removed
-//       from Rescue Shelter Services project. Http Responses from these 
-//       Http Requests are a convention of ExpressJS Router and Ngnix proxy_pass. 
-//        
-// React UI example Http Requests without Ngnix where server is localhost. 
-// services.nginx.conf uses host O/S ip address. 
-//
-// ***************************************************************************
-// CAUTION. Docker containers have localhost with specific virtual ip address
-// ***************************************************************************
-//
-// http://[server]:3302/api/animal/new        [write]
-// http;//[server]:3302/api/animals           [readonly]
-// http://[server]:3303/api/report/categories [readonly]
-// 
-//
-// with Ngnix
-//
-// http://[server]/api/animal/new        [write]
-// http;//[server]/api/report/animals    [readonly]
-// http://[server]/api/report/categories [readonly]
-//
-// ADDITION EFFORT FOR PROOF OF CONCEPT [poc]
-//
 import {Application, NextFunction, Request, Response, Router} from "express";
-import bodyParser, { json } from "body-parser";
+import bodyParser from "body-parser";
 import * as redis from "redis";
-import * as util from "util";
 
 import {CoreServices, createLogService} from "rescueshelter.core";
 
@@ -94,53 +68,65 @@ class AnimalReaderDb {
 } // end AnimalReaderDb
 
 export function PublishWebAPI(app: Application) : void {
-    let jsonResponse = new CoreServices.JsonResponse();            
-
     /**
      * @description Adds Redis cache data with expiration
      * @param {string} key: request original url
      * @param {object} value: actual data
      */
     async function cacheData(key: string, value: any) {  
-        try {
-            const client = new redis.RedisClient({});
-            if(client.connected == false) {
-                console.debug("Redis client not available");
-                return;
-            }
+        const client = new redis.RedisClient({});
 
+        let cacheDone = false;
+        client.on('error', (error) => {
+            if(cacheDone) return; // redis max of n connection attemps.
+
+            console.log(`Animal Cache Data ${error}:`);
+            cacheDone = true;
+            return;
+        });
+        
+        client.on('ready', async () => {
             if(await Promise.resolve(client.set(key, JSON.stringify(value))) &&
                 await Promise.resolve(client.expire(key, 60/*seconds*/*10))) {
                 console.debug(`Redis set \'${key}\' +OK`);
             }
-        } catch(error) {
-            console.debug(`Redis cache data: ${error}`);
-        }
+        });    
     }
 
     const ANIMAL_ROUTER_BASE_URL = '/api/report/animals';
     async function AnimalsRedisMiddleware(req: Request, res: Response, next: NextFunction) {
-        const client = new redis.RedisClient({});
-        if(req.originalUrl.startsWith(ANIMAL_ROUTER_BASE_URL) == false ||
-            client.connected == false) {
+        if(req.originalUrl.startsWith(ANIMAL_ROUTER_BASE_URL) == false) {
             next();
             return;
         }
+        const client = new redis.RedisClient({});
 
-        try { // Reading data from Redis in memory cache
-            client.get(req.originalUrl, (error,reply) => {
-                if(reply) {
-                    console.debug(`Redis get \'${req.originalUrl}\' +OK`);
-                    res.status(200);
-                    res.json(JSON.parse(reply));
-                } else {
-                    console.debug(`Redis get \'${req.originalUrl}\' ${error || 'NOT AVAILABLE'}`);
-                } 
-            });
-        } catch(error) { // Redis cache access  
-            console.debug(`Redis error \'${req.originalUrl}\' ${error}`);
-        } // try-catch
-        next();
+        let nextDone = false; 
+        client.on('error', (error) => {
+            if(nextDone) return; // redis max of n connection attemps.
+
+            console.debug(`Animal Middleware ${error}:`); // display once
+            nextDone = true;
+            next();
+        });
+
+        client.on('ready', () => {
+            console.debug(`Animal Middleware ready now`);
+        });
+
+        // Reading data from Redis in memory cache
+        client.get(req.originalUrl, (error,reply) => {
+            if(nextDone) { 
+                return; // next() where route process request without redis connection
+            } else if(reply)  {
+                console.debug(`Redis get \'${req.originalUrl}\' +OK`);
+                res.status(200);
+                res.json(JSON.parse(reply));
+            } else {
+                console.debug(`Redis get \'${req.originalUrl}\' ${error || 'NOT AVAILABLE'}`);
+                next();
+            } 
+        });
     } // end AnimalsRedisMiddleware
 
     app.use(bodyParser.json({type: 'application/json'}));
@@ -149,6 +135,7 @@ export function PublishWebAPI(app: Application) : void {
     router.get('/categories', async (req,res) => {
         res.status(200);
 
+        const jsonResponse = new CoreServices.JsonResponse();
         var jsonData;
         try {
             const db = new AnimalReaderDb();
@@ -169,7 +156,9 @@ export function PublishWebAPI(app: Application) : void {
 
     router.get("/", async (req,res) => {
         res.status(200);
-        
+
+        const jsonResponse = new CoreServices.JsonResponse();
+
         var page = Number.parseInt(req.query["page"] as any || 1); 
         var limit = Number.parseInt(req.query["limit"] as any || 5);
         var phrase = req.query["phrase"] as string || '';
@@ -193,6 +182,7 @@ export function PublishWebAPI(app: Application) : void {
     router.get('/:id', async (req,res) => {
         res.status(200);
 
+        const jsonResponse = CoreServices.JsonResponse();
         if (!req.params.id) {
             res.json(jsonResponse.createError(`Missing animal id`));
             return;
