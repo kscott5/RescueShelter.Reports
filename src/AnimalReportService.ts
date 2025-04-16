@@ -21,9 +21,11 @@ class AnimalReaderDb {
         return data;
     } // end getAnimal
 
-    async getAnimals(page: Number = 1, limit: Number = 5, phrase?: String) : Promise<any> {
-        var animalAggregate = (!phrase)? this.model.aggregate() :
-        this.model.aggregate().append({$match: {$text: {$search: phrase}}});
+    async getAnimals(options?: {page: 1, limit: 5, keywords: '', endangered: false, category_id: -1}) : Promise<any> {
+
+        const filters = options || {page: 1, limit: 5, keywords: '', endangered: false, category_id: -1};
+        var animalAggregate = (!filters.keywords)? this.model.aggregate() :
+        this.model.aggregate().append({$match: {$text: {$search: filters.keywords}}});
                 
         var data = await animalAggregate.append([
             {
@@ -51,7 +53,7 @@ class AnimalReaderDb {
                 }
             }}
         ])
-        .limit(limit as number);
+        .limit(filters.limit as number);
         
         return data;
     } // end getAnimals
@@ -154,21 +156,19 @@ export function PublishWebAPI(app: Application) : void {
         }
     }); // end animals categories
 
-    router.get("/", async (req,res) => {
+    router.post("/", async (req,res) => {
         res.status(200);
 
         const jsonResponse = new CoreServices.JsonResponse();
 
-        var page = Number.parseInt(req.query["page"] as any || 1); 
-        var limit = Number.parseInt(req.query["limit"] as any || 5);
-        var phrase = req.query["phrase"] as string || '';
-
+        const options = req.body.options;
+        
         var jsonData;
         try {
             const db = new AnimalReaderDb();
-            const data = await db.getAnimals(page, limit, phrase);
+            const data = await db.getAnimals(options);
 
-            jsonData = jsonResponse.createPagination(data,1,page);
+            jsonData = jsonResponse.createPagination(data,1, options?.page || 1);
             await cacheData(req.originalUrl, jsonData);
 
         } catch(error) {
