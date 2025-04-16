@@ -21,9 +21,9 @@ class AnimalReaderDb {
         return data;
     } // end getAnimal
 
-    async getAnimals(options?: {page: 1, limit: 5, keywords: '', endangered: false, category_id: -1}) : Promise<any> {
+    async getAnimals(options?: {page: 1, limit: 100, keywords: '', endangered: false, category_id: -1}) : Promise<any> {
 
-        const filters = options || {page: 1, limit: 5, keywords: '', endangered: false, category_id: -1};
+        const filters = options || {page: 1, limit: 100, keywords: '', endangered: false, category_id: -1};
         var animalAggregate = (!filters.keywords)? this.model.aggregate() :
         this.model.aggregate().append({$match: {$text: {$search: filters.keywords}}});
                 
@@ -156,6 +156,31 @@ export function PublishWebAPI(app: Application) : void {
         }
     }); // end animals categories
 
+    router.get("/", async (req,res) => {
+        res.status(200);
+        
+        const jsonResponse = new CoreServices.JsonResponse();
+
+        var page = Number.parseInt(req.query["page"] as any || 1); 
+        var limit = Number.parseInt(req.query["limit"] as any || 5);
+        var keywords = req.query["keywords"] as string || '';
+
+        var jsonData;
+        try {
+            const db = new AnimalReaderDb();
+            const data = await db.getAnimals(null);
+
+            jsonData = jsonResponse.createPagination(data,1,page);
+            await cacheData(req.originalUrl, jsonData);
+
+        } catch(error) {
+            console.debug(`ERROR: Route get ${req.originalUrl} ${error}`);
+            jsonData = jsonData || jsonResponse.createError('Data not available');
+        } finally {
+            res.json(jsonData);
+        }
+    }); //end animals
+    
     router.post("/", async (req,res) => {
         res.status(200);
 
@@ -182,7 +207,7 @@ export function PublishWebAPI(app: Application) : void {
     router.get('/:id', async (req,res) => {
         res.status(200);
 
-        const jsonResponse = CoreServices.JsonResponse();
+        const jsonResponse = new CoreServices.JsonResponse();
         if (!req.params.id) {
             res.json(jsonResponse.createError(`Missing animal id`));
             return;
