@@ -1,28 +1,3 @@
-// NOTE: 
-//       Report Services contains readonly data access, and should be removed
-//       from Rescue Shelter Services project. Http Responses from these 
-//       Http Requests are a convention of ExpressJS Router and Ngnix proxy_pass. 
-//        
-// React UI example Http Requests without Ngnix where server is localhost. 
-// services.nginx.conf uses host O/S ip address. 
-//
-// ***************************************************************************
-// CAUTION. Docker containers have localhost with specific virtual ip address
-// ***************************************************************************
-//
-// http://[server]:3302/api/animal/new        [write]
-// http;//[server]:3302/api/animals           [readonly]
-// http://[server]:3303/api/report/categories [readonly]
-// 
-//
-// with Ngnix
-//
-// http://[server]/api/animal/new        [write]
-// http;//[server]/api/report/animals    [readonly]
-// http://[server]/api/report/categories [readonly]
-//
-// ADDITION EFFORT FOR PROOF OF CONCEPT [poc]
-//
 import {Application, NextFunction, Request, Response, Router} from "express";
 import bodyParser from "body-parser";
 import * as redis from "redis";
@@ -66,12 +41,12 @@ export function PublishWebAPI(app: Application) : void {
     async function cacheData(key: string, value: any) {  
         const client = new redis.RedisClient({});
 
-        let cacheDone = false;
+        let cacheErrorWasFound = false;
         client.on('error', (error) => {
-            if(cacheDone) return;
+            if(cacheErrorWasFound) return;
 
             console.log(`Sponsor Cache Data ${error}:`);
-            cacheDone = true;
+            cacheErrorWasFound = true;
             return;
         });
         
@@ -91,12 +66,12 @@ export function PublishWebAPI(app: Application) : void {
         }
         const client = new redis.RedisClient({});
 
-        let nextDone = false; 
+        let cacheErrorWasFound = false; 
         client.on('error', (error) => {
-            if(nextDone) return; // redis max of n connection attemps.
+            if(cacheErrorWasFound) return; // redis max of n connection attemps.
 
             console.debug(`Sponsor Middleware ${error}:`); // display once
-            nextDone = true;
+            cacheErrorWasFound = true;
             next();
         });
 
@@ -106,7 +81,7 @@ export function PublishWebAPI(app: Application) : void {
 
         // Reading data from Redis in memory cache
         client.get(req.originalUrl, (error,reply) => {
-            if(nextDone) { 
+            if(cacheErrorWasFound) { 
                 return; // next() where route process request without redis connection
             } else if(reply)  {
                 console.debug(`Redis get \'${req.originalUrl}\' +OK`);

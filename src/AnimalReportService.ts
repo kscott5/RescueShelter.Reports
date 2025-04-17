@@ -78,12 +78,12 @@ export function PublishWebAPI(app: Application) : void {
     async function cacheData(key: string, value: any) {  
         const client = new redis.RedisClient({});
 
-        let cacheDone = false;
+        let cacheErrorWasFound = false;
         client.on('error', (error) => {
-            if(cacheDone) return; // redis max of n connection attemps.
+            if(cacheErrorWasFound) return; // redis max of n connection attemps.
 
-            console.log(`Animal Cache Data ${error}:`);
-            cacheDone = true;
+            console.debug(`Animal Cache Data non-blocking, error: ${error}:`);
+            cacheErrorWasFound = true;
             return;
         });
         
@@ -103,22 +103,22 @@ export function PublishWebAPI(app: Application) : void {
         }
         const client = new redis.RedisClient({});
 
-        let nextDone = false; 
+        let cacheErrorWasFound = false; 
         client.on('error', (error) => {
-            if(nextDone) return; // redis max of n connection attemps.
+            if(cacheErrorWasFound) return; // redis max of n connection attemps.
 
-            console.debug(`Animal Middleware ${error}:`); // display once
-            nextDone = true;
+            console.debug(`Animal Cache Middleware non-blocking, error: ${error}:`); // display once
+            cacheErrorWasFound = true;
             next();
         });
 
         client.on('ready', () => {
-            console.debug(`Animal Middleware ready now`);
+            console.debug(`Animal Cache Middleware ready now`);
         });
 
         // Reading data from Redis in memory cache
         client.get(req.originalUrl, (error,reply) => {
-            if(nextDone) { 
+            if(cacheErrorWasFound) { 
                 return; // next() where route process request without redis connection
             } else if(reply)  {
                 console.debug(`Redis get \'${req.originalUrl}\' +OK`);
