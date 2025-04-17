@@ -39,13 +39,17 @@ export function PublishWebAPI(app: Application) : void {
      * @param {object} value: actual data
      */
     async function cacheData(key: string, value: any) {  
-        const client = new redis.RedisClient({});
+        const client = new redis.RedisClient({
+            
+        });
 
+        // NOTE: https://github.com/redis/node-redis/blob/4d659f0b446d19b409f53eafbf7317f5fbb917a9/docs/client-configuration.md
+        
         let cacheErrorWasFound = false;
         client.on('error', (error) => {
             if(cacheErrorWasFound) return;
 
-            console.log(`Sponsor Cache Data ${error}:`);
+            console.log(`Sponsor Cache Data non-blocking, error: ${error}:`);
             cacheErrorWasFound = true;
             return;
         });
@@ -70,7 +74,7 @@ export function PublishWebAPI(app: Application) : void {
         client.on('error', (error) => {
             if(cacheErrorWasFound) return; // redis max of n connection attemps.
 
-            console.debug(`Sponsor Middleware ${error}:`); // display once
+            console.debug(`Sponsor Middleware non-blocking, ${error}:`); // display once
             cacheErrorWasFound = true;
             next();
         });
