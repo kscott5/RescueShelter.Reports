@@ -21,9 +21,16 @@ class AnimalReaderDb {
         return data;
     } // end getAnimal
 
-    async getAnimals(options?: {page: 1, limit: 100, keywords: '', endangered: false, category_id: -1}) : Promise<any> {
+    async getAnimals(options?: {page: 1, limit: 100, keywords: '', endangered: false, categoryid: -1}) : Promise<any> {
 
-        const filters = options || {page: 1, limit: 100, keywords: '', endangered: false, category_id: -1};
+        const filters = {
+            page: options?.page || 1, 
+            limit: options?.limit || 100, 
+            keywords:  options?.keywords || '', 
+            endangered: options?.endangered || false, 
+            categoryid: options?.categoryid || -1 /* all */
+        };
+
         var animalAggregate = (!filters.keywords)? this.model.aggregate() :
         this.model.aggregate().append({$match: {$text: {$search: filters.keywords}}});
                 
@@ -103,6 +110,7 @@ export function PublishWebAPI(app: Application) : void {
             next();
             return;
         }
+
         const client = new redis.RedisClient({});
 
         let cacheErrorWasFound = false; 
@@ -167,7 +175,7 @@ export function PublishWebAPI(app: Application) : void {
         const jsonResponse = new CoreServices.JsonResponse();
 
         var page = Number.parseInt(req.query["page"] as any || 1); 
-        var limit = Number.parseInt(req.query["limit"] as any || 5);
+        var limit = Number.parseInt(req.query["limit"] as any || 100);
         var keywords = req.query["keywords"] as string || '';
 
         var jsonData;
