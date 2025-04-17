@@ -92,6 +92,8 @@ export function PublishWebAPI(app: Application) : void {
                 await Promise.resolve(client.expire(key, 60/*seconds*/*10))) {
                 console.debug(`Redis set \'${key}\' +OK`);
             }
+
+            client.quit();
         });    
     }
 
@@ -113,22 +115,25 @@ export function PublishWebAPI(app: Application) : void {
         });
 
         client.on('ready', () => {
-            console.debug(`Animal Cache Middleware ready now`);
-        });
+            if(cacheErrorWasFound) {
+                console.debug(`Animal Cache Middleware ready now`);
+                return; // next() route request done without cache client
+            }
 
-        // Reading data from Redis in memory cache
-        client.get(req.originalUrl, (error,reply) => {
-            if(cacheErrorWasFound) { 
-                return; // next() where route process request without redis connection
-            } else if(reply)  {
-                console.debug(`Redis get \'${req.originalUrl}\' +OK`);
-                res.status(200);
-                res.json(JSON.parse(reply));
-            } else {
-                console.debug(`Redis get \'${req.originalUrl}\' ${error || 'NOT AVAILABLE'}`);
-                next();
-            } 
-        });
+            // Reading data from Redis in memory cache
+            client.get(req.originalUrl, (error,reply) => {
+                if(reply)  {
+                    console.debug(`Redis get \'${req.originalUrl}\' +OK`);
+                    res.status(200);
+                    res.json(JSON.parse(reply));
+                } else {
+                    console.debug(`Redis get \'${req.originalUrl}\' ${error || 'NOT AVAILABLE'}`);
+                    next();
+                }
+
+                client.quit();
+            });
+        }); // end client.on('ready'...)
     } // end AnimalsRedisMiddleware
 
     app.use(bodyParser.json({type: 'application/json'}));
