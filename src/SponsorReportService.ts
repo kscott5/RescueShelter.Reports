@@ -1,18 +1,26 @@
 import {Application, NextFunction, Request, Response, Router} from "express";
 import bodyParser from "body-parser";
-import * as redis from "redis";
-
+import {RedisClient}  from "redis";
+import {Connection, Model } from "mongoose";
 import {CoreServices} from "rescueshelter.core";
 
 let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
 
+
 class SponsorReaderDb {
-    private __selectionFields;
-    public model;
+private connection: Connection;
+    private model: Model<CoreServices.animalSchema>;
+    private selectionFields;
+
 
     constructor() {
-        this.__selectionFields =  "_id useremail username firstname lastname photo audit";
-        this.model = CoreServices.getModel(CoreServices.SPONSOR_MODEL_NAME);
+        this.selectionFields =  "_id useremail username firstname lastname photo audit";
+        this.connection = CoreServices.createConnection();
+        this.model = this.connection.model(CoreServices.SPONSORS_MODEL_NAME, CoreServices.sponsorSchema);
+    }
+
+    async close() {
+        await this.connection.close();
     }
 
     async getSponsor(id: String) : Promise<any>  {
@@ -20,13 +28,13 @@ class SponsorReaderDb {
         return data;
     }
 
-    async getSponsors(page: Number = 1, limit: Number = 5, phrase?: String) : Promise<any> {
+    async getSponsors(page: Number = 1, limit: number = 5, phrase?: String) : Promise<any> {
         var condition = (phrase)? {$text: {$search: phrase}}: {};
         
         var data = await this.model.find(condition)
             .lean()
             .limit(limit)
-            .select(this.__selectionFields);
+            .select(this.selectionFields);
 
         return data;
     } 
@@ -39,7 +47,7 @@ export function PublishWebAPI(app: Application) : void {
      * @param {object} value: actual data
      */
     async function cacheData(key: string, value: any) {  
-        const client = new redis.RedisClient({
+        const client = new RedisClient({
             
         });
 
@@ -70,7 +78,7 @@ export function PublishWebAPI(app: Application) : void {
             next();
             return;
         }
-        const client = new redis.RedisClient({});
+        const client = new RedisClient({});
 
         let cacheErrorWasFound = false; 
         client.on('error', (error) => {
@@ -115,6 +123,7 @@ export function PublishWebAPI(app: Application) : void {
         try {
             const db = new SponsorReaderDb();
             const data = await db.getSponsor(req.params.id);
+            await db.close();
 
             jsonData = jsonResponse.createData(data);
             await cacheData(req.originalUrl, jsonData);
@@ -138,7 +147,8 @@ export function PublishWebAPI(app: Application) : void {
         try {
             const db = new SponsorReaderDb();
             const data = await db.getSponsors(page,limit,phrase);
-            
+            await db.close();
+
             jsonData = jsonResponse.createPagination(data, 1, page);
             await cacheData(req.originalUrl, jsonData);
         } catch(error) {
