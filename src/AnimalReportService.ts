@@ -1,21 +1,29 @@
 import {Application, NextFunction, Request, Response, Router} from "express";
 import bodyParser from "body-parser";
 import * as redis from "redis";
+import {Connection, Model} from "mongoose";
 
 import {CoreServices, createLogService} from "rescueshelter.core";
 
 let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
 
 class AnimalReaderDb {
-    public model;
+    private connection: Connection;
+    private model: Model<CoreServices.animalSchema>;
     private selectionFields;
 
     constructor() {
-        this.model = CoreServices.getModel(CoreServices.ANIMAL_MODEL_NAME);
+        this.connection = CoreServices.createConnection();
+        this.model = this.connection.model(CoreServices.ANIMALS_MODEL_NAME, CoreServices.animalSchema);
         this.selectionFields = '_id name description imageSrc sponsors';                
     }
 
+    async close() {
+        await this.connection.close();
+    }
+
     async getAnimal(id: String) : Promise<any> {
+        // extend Mongoose.Connection class and override
         var data = await this.model.findById(id);
         
         return data;
@@ -31,24 +39,26 @@ class AnimalReaderDb {
             categoryid: options?.categoryid || -1 /* all */
         };
 
-        var animalAggregate = (!filters.keywords)? this.model.aggregate() :
-        this.model.aggregate().append({$match: {$text: {$search: filters.keywords}}});
-                
-        var data = await animalAggregate.append([
-            {
-                $lookup: {
-                    from: "sponsors",
-                    let: {animals_sponsors: '$sponsors'},
-                    pipeline: [{
-                        $project: {
-                            _id: false, useremail: 1, username: 1, 
-                            is_sponsor: {$in: ['$useremail', '$$animals_sponsors']}
-                        }            
-                    }],
-                    as: "sponsors"
-                }        
-            },
-            {
+        const pipeline = [];
+        if(filters.keywords){
+            pipeline.push({$match: {$text: {$search: filters.keywords}}});
+        }
+        
+        pipeline.push({
+            $lookup: {
+                from: "sponsors",
+                let: {animals_sponsors: '$sponsors'},
+                pipeline: [{
+                    $project: {
+                        _id: false, useremail: 1, username: 1, 
+                        is_sponsor: {$in: ['$useremail', '$$animals_sponsors']}
+                    }            
+                }],
+                as: "sponsors"
+            }        
+        });
+
+        pipeline.push({
             $project: {
                 name: 1, description: 1, endangered: 1, image: 1,
                 sponsors: {
@@ -58,9 +68,9 @@ class AnimalReaderDb {
                         cond: {$eq: ['$$contributor.is_sponsor', true]}
                     }
                 }
-            }}
-        ])
-        .limit(filters.limit as number);
+            }});
+
+        var data = await this.model.aggregate(pipeline).limit(filters.limit as number);
         
         return data;
     } // end getAnimals
@@ -155,6 +165,7 @@ export function PublishWebAPI(app: Application) : void {
         try {
             const db = new AnimalReaderDb();
             const data = await db.getCategories();
+            await db.close();
 
             jsonData = jsonResponse.createData(data);
 
@@ -182,6 +193,7 @@ export function PublishWebAPI(app: Application) : void {
         try {
             const db = new AnimalReaderDb();
             const data = await db.getAnimals(null);
+            await db.close();
 
             jsonData = jsonResponse.createPagination(data,1,page);
             await cacheData(req.originalUrl, jsonData);
@@ -205,6 +217,7 @@ export function PublishWebAPI(app: Application) : void {
         try {
             const db = new AnimalReaderDb();
             const data = await db.getAnimals(options);
+            await db.close();
 
             jsonData = jsonResponse.createPagination(data,1, options?.page || 1);
             await cacheData(req.originalUrl, jsonData);
@@ -229,7 +242,8 @@ export function PublishWebAPI(app: Application) : void {
         var jsonData;
         try {
             const db = new AnimalReaderDb();
-            const data = await db.model.findById(req.params.id);
+            const data = await db.getAnimal(req.params.id);
+            await db.close();
 
             jsonData = jsonResponse.createData(data);
             await cacheData(req.originalUrl, jsonData);
