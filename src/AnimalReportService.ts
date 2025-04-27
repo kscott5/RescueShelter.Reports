@@ -1,6 +1,6 @@
 import {Application, NextFunction, Request, Response, Router} from "express";
 import bodyParser from "body-parser";
-import * as redis from "redis";
+import {RedisClient} from "redis";
 import {Connection, Model} from "mongoose";
 
 import {CoreServices, createLogService} from "rescueshelter.core";
@@ -93,7 +93,7 @@ export function PublishWebAPI(app: Application) : void {
      * @param {object} value: actual data
      */
     async function cacheData(key: string, value: any) {  
-        const client = new redis.RedisClient({});
+        const client = new RedisClient({});
 
         let cacheErrorWasFound = false;
         client.on('error', (error) => {
@@ -121,7 +121,7 @@ export function PublishWebAPI(app: Application) : void {
             return;
         }
 
-        const client = new redis.RedisClient({});
+        const client = new RedisClient({});
 
         let cacheErrorWasFound = false; 
         client.on('error', (error) => {
