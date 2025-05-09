@@ -5,7 +5,15 @@ import {PublishWebAPI as SponsorReportServices} from "./SponsorReportService";
 declare let __dirname; // variable initialize by NodeJS Path Module
 
 let path = require("path");
-let staticPath = path.join(__dirname, '/../public');
+let staticPath = path.join(__dirname, '../public');
 
-CoreServer.start('Rescue Shelter Report Services', 3303, 
-    [AnimalReportServices,SponsorReportServices], [/* cors */], staticPath);
+CoreServer.start({
+    server: {
+        secure: true,
+        name: 'Rescue Shelter Report Services', 
+        port: 3303
+    },
+    middleWare: [AnimalReportServices,SponsorReportServices], 
+    corsHostName: [/* cors */], 
+    webRootPath: staticPath,
+    closeCallback: ()=> {} });
