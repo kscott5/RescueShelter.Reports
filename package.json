@@ -15,7 +15,7 @@
     "mongoose": "^8.14.0",
     "morgan": "^1.10.0",
     "redis": "^3.1.2",
-    "rescueshelter.core": "^2.0.10",
+    "rescueshelter.core": "^2.1.0",
     "winston": "^3.3.3"
   },
   "scripts": {
@@ -36,7 +36,7 @@
     "@types/helmet": "^0.0.47",
     "@types/morgan": "^1.9.1",
     "snyk": "^1.410.3",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.3"
   },
   "files": [
     "README.MD",
