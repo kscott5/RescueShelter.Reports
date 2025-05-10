@@ -28,13 +28,16 @@ private connection: Connection;
         return data;
     }
 
-    async getSponsors(page: Number = 1, limit: number = 5, phrase?: String) : Promise<any> {
-        var condition = (phrase)? {$text: {$search: phrase}}: {};
+    async getSponsors(options) : Promise<any> {
+        var filters = {...options,
+            limit: options.limit || 100,
+            keywords: (options.keywords+'').trim()
+        }
+        var condition = (filters.keywords)? {$text: {$search: filters.keywords}}: {};
         
         var data = await this.model.find(condition)
             .lean()
-            .limit(limit)
-            .select(this.selectionFields);
+            .limit(filters.limit);
 
         return data;
     } 
@@ -131,7 +134,7 @@ export class SponsorReportService {
                 jsonData = jsonResponse.createData(data);
                 await cacheData(req.originalUrl, jsonData);
             } catch(error) {
-                console.debug(`ERROR: Route get ${req.originalUrl} ${error}`);
+                console.debug(`ERROR: Route get/:id ${req.originalUrl} ${error}`);
                 jsonData = jsonData || jsonResponse.createError('Data not available');
             } finally {
                 res.json(jsonData);
@@ -142,20 +145,43 @@ export class SponsorReportService {
             const jsonResponse = new CoreServices.JsonResponse();
             res.status(200);
 
-            var page = Number.parseInt(req.query.page as any || 1); 
-            var limit = Number.parseInt(req.query.limit as any || 5);
-            var phrase = req.query.phrase as any || null;
+            const options = {
+                page:Number.parseInt(req.query.page as any || 1),
+                limit: Number.parseInt(req.query.limit as any || 5),
+                phrase: req.query.phrase as any || null
+            };
 
             var jsonData;
             try {
                 const db = new SponsorReaderDb();
-                const data = await db.getSponsors(page,limit,phrase);
+                const data = await db.getSponsors(options);
                 await db.close();
 
-                jsonData = jsonResponse.createPagination(data, 1, page);
+                jsonData = jsonResponse.createPagination(data, 1, options.page);
                 await cacheData(req.originalUrl, jsonData);
             } catch(error) {
                 console.debug(`ERROR: Route get ${req.originalUrl} ${error}`);
+                jsonData = jsonData || jsonResponse.createError('Data not available');
+            } finally {
+                res.json(jsonData);
+            }
+        });
+
+        router.post("/", async (req,res) => {
+            const jsonResponse = new CoreServices.JsonResponse();
+            res.status(200);
+
+            const options = req.body.options;
+            var jsonData;
+            try {
+                const db = new SponsorReaderDb();
+                const data = await db.getSponsors(options);
+                await db.close();
+
+                jsonData = jsonResponse.createPagination(data,1, options?.page || 1);
+                await cacheData(req.originalUrl, jsonData);
+            } catch(error) {
+                console.debug(`ERROR: Route post ${req.originalUrl} ${error}`);
                 jsonData = jsonData || jsonResponse.createError('Data not available');
             } finally {
                 res.json(jsonData);

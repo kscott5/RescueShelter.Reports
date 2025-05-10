@@ -29,7 +29,7 @@ class AnimalReaderDb {
         return data;
     } // end getAnimal
 
-    async getAnimals(options?: {page: 1, limit: 100, keywords: '', endangered: false, categoryid: -1}) : Promise<any> {
+    async getAnimals(options) : Promise<any> {
 
         const filters = {
             page: options?.page || 1, 
@@ -188,17 +188,19 @@ export class AnimalReportService {
             
             const jsonResponse = new CoreServices.JsonResponse();
 
-            var page = Number.parseInt(req.query["page"] as any || 1); 
-            var limit = Number.parseInt(req.query["limit"] as any || 100);
-            var keywords = req.query["keywords"] as string || '';
+            const options = {
+                page: Number.parseInt(req.query["page"] as any || 1),
+                limit: Number.parseInt(req.query["limit"] as any || 100),
+                keywords: req.query["keywords"] as string || ''
+            };
 
             var jsonData;
             try {
                 const db = new AnimalReaderDb();
-                const data = await db.getAnimals(null);
+                const data = await db.getAnimals(options);
                 await db.close();
 
-                jsonData = jsonResponse.createPagination(data,1,page);
+                jsonData = jsonResponse.createPagination(data,1,options.page);
                 await cacheData(req.originalUrl, jsonData);
 
             } catch(error) {
@@ -226,7 +228,7 @@ export class AnimalReportService {
                 await cacheData(req.originalUrl, jsonData);
 
             } catch(error) {
-                console.debug(`ERROR: Route get ${req.originalUrl} ${error}`);
+                console.debug(`ERROR: Route post ${req.originalUrl} ${error}`);
                 jsonData = jsonData || jsonResponse.createError('Data not available');
             } finally {
                 res.json(jsonData);
