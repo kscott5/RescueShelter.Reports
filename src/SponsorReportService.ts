@@ -1,6 +1,6 @@
 import {Application, NextFunction, Request, Response, Router} from "express";
 import bodyParser from "body-parser";
-import {RedisClient}  from "redis";
+import {createClient as createRedisClient}  from "redis";
 import {Connection, Model } from "mongoose";
 import {CoreServices} from "rescueshelter.core";
 
@@ -53,9 +53,7 @@ export class SponsorReportService {
          * @param {object} value: actual data
          */
         async function cacheData(key: string, value: any) {  
-            const client = new RedisClient({
-                
-            });
+            const client = createRedisClient({});
 
             // NOTE: https://github.com/redis/node-redis/blob/4d659f0b446d19b409f53eafbf7317f5fbb917a9/docs/client-configuration.md
             
@@ -76,6 +74,7 @@ export class SponsorReportService {
 
                 client.quit();
             });    
+            client.connect();
         }
 
         const SPONSORS_ROUTER_BASE_URL = '/api/report/sponsors';
@@ -84,7 +83,7 @@ export class SponsorReportService {
                 next();
                 return;
             }
-            const client = new RedisClient({});
+            const client = createRedisClient({});
 
             let cacheErrorWasFound = false; 
             client.on('error', (error) => {
@@ -103,19 +102,18 @@ export class SponsorReportService {
                 }
 
                 // Reading data from Redis in memory cache
-                client.get(req.originalUrl, (error,reply) => {
-                    if(reply)  {
-                        console.debug(`Redis get \'${req.originalUrl}\' +OK`);
-                        res.status(200);
-                        res.json(JSON.parse(reply));
-                    } else {
-                        console.debug(`Redis get \'${req.originalUrl}\' ${error || 'NOT AVAILABLE'}`);
-                        next();
-                    } 
-
-                    client.quit();
-                }); // end client.get(...)
+                client.get(req.originalUrl).then((value) => {
+                    console.debug(`Redis get \'${req.originalUrl}\' +OK`);
+                    res.status(200);
+                    res.json(JSON.parse(value+''));
+                }).catch((error) => {
+                    console.debug(`Redis get \'${req.originalUrl}\' ${error || 'NOT AVAILABLE'}`);
+                    next();
+                }); 
+                client.quit();
+                
             }); // end client.on('ready'...)
+            client.connect();
         } // end SponsorsRedisMiddleware
 
         app.use(bodyParser.json({type: 'application/json'}));

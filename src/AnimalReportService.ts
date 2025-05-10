@@ -1,6 +1,6 @@
 import {Application, NextFunction, Request, Response, Router} from "express";
 import bodyParser from "body-parser";
-import {RedisClient} from "redis";
+import {createClient as createRedisClient} from "redis";
 import {Connection, Model} from "mongoose";
 
 import {CoreServices, createLogService} from "rescueshelter.core";
@@ -96,7 +96,7 @@ export class AnimalReportService {
          * @param {object} value: actual data
          */
         async function cacheData(key: string, value: any) {  
-            const client = new RedisClient({});
+            const client = createRedisClient({});
 
             let cacheErrorWasFound = false;
             client.on('error', (error) => {
@@ -115,6 +115,7 @@ export class AnimalReportService {
 
                 client.quit();
             });    
+            client.connect();
         }
 
         const ANIMAL_ROUTER_BASE_URL = '/api/report/animals';
@@ -124,7 +125,7 @@ export class AnimalReportService {
                 return;
             }
 
-            const client = new RedisClient({});
+            const client = createRedisClient({});
 
             let cacheErrorWasFound = false; 
             client.on('error', (error) => {
@@ -142,19 +143,19 @@ export class AnimalReportService {
                 }
 
                 // Reading data from Redis in memory cache
-                client.get(req.originalUrl, (error,reply) => {
-                    if(reply)  {
-                        console.debug(`Redis get \'${req.originalUrl}\' +OK`);
-                        res.status(200);
-                        res.json(JSON.parse(reply));
-                    } else {
-                        console.debug(`Redis get \'${req.originalUrl}\' ${error || 'NOT AVAILABLE'}`);
-                        next();
-                    }
-
-                    client.quit();
+                client.get(req.originalUrl).then((value) => {
+                    console.debug(`Redis get \'${req.originalUrl}\' +OK`);
+                    res.status(200);
+                    res.json(JSON.parse(value+''));
+                }).catch((error) => {
+                    console.debug(`Redis get \'${req.originalUrl}\' ${error || 'NOT AVAILABLE'}`);
+                    next();
                 });
+
+                client.quit();
             }); // end client.on('ready'...)
+
+            client.connect();
         } // end AnimalsRedisMiddleware
 
         app.use(bodyParser.json({type: 'application/json'}));
