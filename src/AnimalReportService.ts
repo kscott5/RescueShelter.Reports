@@ -86,176 +86,180 @@ class AnimalReaderDb {
     } // end getCategories
 } // end AnimalReaderDb
 
-export function PublishWebAPI(app: Application) : void {
-    /**
-     * @description Adds Redis cache data with expiration
-     * @param {string} key: request original url
-     * @param {object} value: actual data
-     */
-    async function cacheData(key: string, value: any) {  
-        const client = new RedisClient({});
+export class AnimalReportService {
+    constructor(){}
 
-        let cacheErrorWasFound = false;
-        client.on('error', (error) => {
-            if(cacheErrorWasFound) return; // redis max of n connection attemps.
+    publishWebAPI(app: Application) : void {
+        /**
+         * @description Adds Redis cache data with expiration
+         * @param {string} key: request original url
+         * @param {object} value: actual data
+         */
+        async function cacheData(key: string, value: any) {  
+            const client = new RedisClient({});
 
-            console.debug(`Animal Cache Data non-blocking, error: ${error}:`);
-            cacheErrorWasFound = true;
-            return;
-        });
-        
-        client.on('ready', async () => {
-            if(await Promise.resolve(client.set(key, JSON.stringify(value))) &&
-                await Promise.resolve(client.expire(key, 60/*seconds*/*10))) {
-                console.debug(`Redis set \'${key}\' +OK`);
-            }
+            let cacheErrorWasFound = false;
+            client.on('error', (error) => {
+                if(cacheErrorWasFound) return; // redis max of n connection attemps.
 
-            client.quit();
-        });    
-    }
-
-    const ANIMAL_ROUTER_BASE_URL = '/api/report/animals';
-    async function AnimalsRedisMiddleware(req: Request, res: Response, next: NextFunction) {
-        if(req.originalUrl.startsWith(ANIMAL_ROUTER_BASE_URL) == false) {
-            next();
-            return;
-        }
-
-        const client = new RedisClient({});
-
-        let cacheErrorWasFound = false; 
-        client.on('error', (error) => {
-            if(cacheErrorWasFound) return; // redis max of n connection attemps.
-
-            console.debug(`Animal Cache Middleware non-blocking, error: ${error}:`); // display once
-            cacheErrorWasFound = true;
-            next();
-        });
-
-        client.on('ready', () => {
-            if(cacheErrorWasFound) {
-                console.debug(`Animal Cache Middleware ready now`);
-                return; // next() route request done without cache client
-            }
-
-            // Reading data from Redis in memory cache
-            client.get(req.originalUrl, (error,reply) => {
-                if(reply)  {
-                    console.debug(`Redis get \'${req.originalUrl}\' +OK`);
-                    res.status(200);
-                    res.json(JSON.parse(reply));
-                } else {
-                    console.debug(`Redis get \'${req.originalUrl}\' ${error || 'NOT AVAILABLE'}`);
-                    next();
+                console.debug(`Animal Cache Data non-blocking, error: ${error}:`);
+                cacheErrorWasFound = true;
+                return;
+            });
+            
+            client.on('ready', async () => {
+                if(await Promise.resolve(client.set(key, JSON.stringify(value))) &&
+                    await Promise.resolve(client.expire(key, 60/*seconds*/*10))) {
+                    console.debug(`Redis set \'${key}\' +OK`);
                 }
 
                 client.quit();
+            });    
+        }
+
+        const ANIMAL_ROUTER_BASE_URL = '/api/report/animals';
+        async function AnimalsRedisMiddleware(req: Request, res: Response, next: NextFunction) {
+            if(req.originalUrl.startsWith(ANIMAL_ROUTER_BASE_URL) == false) {
+                next();
+                return;
+            }
+
+            const client = new RedisClient({});
+
+            let cacheErrorWasFound = false; 
+            client.on('error', (error) => {
+                if(cacheErrorWasFound) return; // redis max of n connection attemps.
+
+                console.debug(`Animal Cache Middleware non-blocking, error: ${error}:`); // display once
+                cacheErrorWasFound = true;
+                next();
             });
-        }); // end client.on('ready'...)
-    } // end AnimalsRedisMiddleware
 
-    app.use(bodyParser.json({type: 'application/json'}));
-    app.use(AnimalsRedisMiddleware);
+            client.on('ready', () => {
+                if(cacheErrorWasFound) {
+                    console.debug(`Animal Cache Middleware ready now`);
+                    return; // next() route request done without cache client
+                }
 
-    router.get('/categories', async (req,res) => {
-        res.status(200);
+                // Reading data from Redis in memory cache
+                client.get(req.originalUrl, (error,reply) => {
+                    if(reply)  {
+                        console.debug(`Redis get \'${req.originalUrl}\' +OK`);
+                        res.status(200);
+                        res.json(JSON.parse(reply));
+                    } else {
+                        console.debug(`Redis get \'${req.originalUrl}\' ${error || 'NOT AVAILABLE'}`);
+                        next();
+                    }
 
-        const jsonResponse = new CoreServices.JsonResponse();
-        var jsonData;
-        try {
-            const db = new AnimalReaderDb();
-            const data = await db.getCategories();
-            await db.close();
+                    client.quit();
+                });
+            }); // end client.on('ready'...)
+        } // end AnimalsRedisMiddleware
 
-            jsonData = jsonResponse.createData(data);
+        app.use(bodyParser.json({type: 'application/json'}));
+        app.use(AnimalsRedisMiddleware);
 
-            if(jsonData.data?.length > 0)
+        router.get('/categories', async (req,res) => {
+            res.status(200);
+
+            const jsonResponse = new CoreServices.JsonResponse();
+            var jsonData;
+            try {
+                const db = new AnimalReaderDb();
+                const data = await db.getCategories();
+                await db.close();
+
+                jsonData = jsonResponse.createData(data);
+
+                if(jsonData.data?.length > 0)
+                    await cacheData(req.originalUrl, jsonData);
+
+            } catch(error) {
+                console.debug(`ERROR: Route get ${req.originalUrl} ${error}`);
+                jsonData = jsonData || jsonResponse.createError('Data not available');
+            } finally {
+                res.json(jsonData);
+            }
+        }); // end animals categories
+
+        router.get("/", async (req,res) => {
+            res.status(200);
+            
+            const jsonResponse = new CoreServices.JsonResponse();
+
+            var page = Number.parseInt(req.query["page"] as any || 1); 
+            var limit = Number.parseInt(req.query["limit"] as any || 100);
+            var keywords = req.query["keywords"] as string || '';
+
+            var jsonData;
+            try {
+                const db = new AnimalReaderDb();
+                const data = await db.getAnimals(null);
+                await db.close();
+
+                jsonData = jsonResponse.createPagination(data,1,page);
                 await cacheData(req.originalUrl, jsonData);
 
-        } catch(error) {
-            console.debug(`ERROR: Route get ${req.originalUrl} ${error}`);
-            jsonData = jsonData || jsonResponse.createError('Data not available');
-        } finally {
-            res.json(jsonData);
-        }
-    }); // end animals categories
-
-    router.get("/", async (req,res) => {
-        res.status(200);
+            } catch(error) {
+                console.debug(`ERROR: Route get ${req.originalUrl} ${error}`);
+                jsonData = jsonData || jsonResponse.createError('Data not available');
+            } finally {
+                res.json(jsonData);
+            }
+        }); //end animals
         
-        const jsonResponse = new CoreServices.JsonResponse();
+        router.post("/", async (req,res) => {
+            res.status(200);
 
-        var page = Number.parseInt(req.query["page"] as any || 1); 
-        var limit = Number.parseInt(req.query["limit"] as any || 100);
-        var keywords = req.query["keywords"] as string || '';
+            const jsonResponse = new CoreServices.JsonResponse();
 
-        var jsonData;
-        try {
-            const db = new AnimalReaderDb();
-            const data = await db.getAnimals(null);
-            await db.close();
+            const options = req.body.options;
+            
+            var jsonData;
+            try {
+                const db = new AnimalReaderDb();
+                const data = await db.getAnimals(options);
+                await db.close();
 
-            jsonData = jsonResponse.createPagination(data,1,page);
-            await cacheData(req.originalUrl, jsonData);
+                jsonData = jsonResponse.createPagination(data,1, options?.page || 1);
+                await cacheData(req.originalUrl, jsonData);
 
-        } catch(error) {
-            console.debug(`ERROR: Route get ${req.originalUrl} ${error}`);
-            jsonData = jsonData || jsonResponse.createError('Data not available');
-        } finally {
-            res.json(jsonData);
-        }
-    }); //end animals
-    
-    router.post("/", async (req,res) => {
-        res.status(200);
+            } catch(error) {
+                console.debug(`ERROR: Route get ${req.originalUrl} ${error}`);
+                jsonData = jsonData || jsonResponse.createError('Data not available');
+            } finally {
+                res.json(jsonData);
+            }
+        }); //end animals
 
-        const jsonResponse = new CoreServices.JsonResponse();
+        router.get('/:id', async (req,res) => {
+            res.status(200);
 
-        const options = req.body.options;
-        
-        var jsonData;
-        try {
-            const db = new AnimalReaderDb();
-            const data = await db.getAnimals(options);
-            await db.close();
+            const jsonResponse = new CoreServices.JsonResponse();
+            if (!req.params.id) {
+                res.json(jsonResponse.createError(`Missing animal id`));
+                return;
+            }
 
-            jsonData = jsonResponse.createPagination(data,1, options?.page || 1);
-            await cacheData(req.originalUrl, jsonData);
+            var jsonData;
+            try {
+                const db = new AnimalReaderDb();
+                const data = await db.getAnimal(req.params.id);
+                await db.close();
 
-        } catch(error) {
-            console.debug(`ERROR: Route get ${req.originalUrl} ${error}`);
-            jsonData = jsonData || jsonResponse.createError('Data not available');
-        } finally {
-            res.json(jsonData);
-        }
-    }); //end animals
+                jsonData = jsonResponse.createData(data);
+                await cacheData(req.originalUrl, jsonData);
 
-    router.get('/:id', async (req,res) => {
-        res.status(200);
+            } catch(error) {
+                console.debug(`ERROR: Route get ${req.originalUrl} ${error}`);
+                jsonData = jsonData || jsonResponse.createError('Data not available');
+            } finally {
+                res.json(jsonData);
+            }
+        }); // end animal with id
 
-        const jsonResponse = new CoreServices.JsonResponse();
-        if (!req.params.id) {
-            res.json(jsonResponse.createError(`Missing animal id`));
-            return;
-        }
-
-        var jsonData;
-        try {
-            const db = new AnimalReaderDb();
-            const data = await db.getAnimal(req.params.id);
-            await db.close();
-
-            jsonData = jsonResponse.createData(data);
-            await cacheData(req.originalUrl, jsonData);
-
-        } catch(error) {
-            console.debug(`ERROR: Route get ${req.originalUrl} ${error}`);
-            jsonData = jsonData || jsonResponse.createError('Data not available');
-        } finally {
-            res.json(jsonData);
-        }
-    }); // end animal with id
-
-    // string.concat('/') is an express HACK. req.originalUrl.startsWith(SPONSORS_ROUTER_BASE_URL)
-    app.use(ANIMAL_ROUTER_BASE_URL.concat('/'), router);
-} // end PublishWebAPI
+        // string.concat('/') is an express HACK. req.originalUrl.startsWith(SPONSORS_ROUTER_BASE_URL)
+        app.use(ANIMAL_ROUTER_BASE_URL.concat('/'), router);
+    } // end publishWebAPI
+} // end AnimalReportService

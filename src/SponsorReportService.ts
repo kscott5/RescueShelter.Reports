@@ -40,125 +40,129 @@ private connection: Connection;
     } 
 } //end SponsorReaderDb class
 
-export function PublishWebAPI(app: Application) : void {   
-    /**
-     * @description Adds Redis cache data with expiration
-     * @param {string} key: request original url
-     * @param {object} value: actual data
-     */
-    async function cacheData(key: string, value: any) {  
-        const client = new RedisClient({
+export class SponsorReportService {
+    constructor(){}
+    
+    publishWebAPI(app: Application) : void {   
+        /**
+         * @description Adds Redis cache data with expiration
+         * @param {string} key: request original url
+         * @param {object} value: actual data
+         */
+        async function cacheData(key: string, value: any) {  
+            const client = new RedisClient({
+                
+            });
+
+            // NOTE: https://github.com/redis/node-redis/blob/4d659f0b446d19b409f53eafbf7317f5fbb917a9/docs/client-configuration.md
             
-        });
+            let cacheErrorWasFound = false;
+            client.on('error', (error) => {
+                if(cacheErrorWasFound) return;
 
-        // NOTE: https://github.com/redis/node-redis/blob/4d659f0b446d19b409f53eafbf7317f5fbb917a9/docs/client-configuration.md
-        
-        let cacheErrorWasFound = false;
-        client.on('error', (error) => {
-            if(cacheErrorWasFound) return;
-
-            console.log(`Sponsor Cache Data non-blocking, error: ${error}:`);
-            cacheErrorWasFound = true;
-            return;
-        });
-        
-        client.on('ready', async () => {
-            if(await Promise.resolve(client.set(key, JSON.stringify(value))) &&
-                await Promise.resolve(client.expire(key, 60/*seconds*/*10))) {
-                console.debug(`Redis set \'${key}\' +OK`);
-            }
-
-            client.quit();
-        });    
-    }
-
-    const SPONSORS_ROUTER_BASE_URL = '/api/report/sponsors';
-    async function SponsorsRedisMiddleware(req: Request, res: Response, next: NextFunction) {
-        if(req.originalUrl.startsWith(SPONSORS_ROUTER_BASE_URL) == false) {
-            next();
-            return;
-        }
-        const client = new RedisClient({});
-
-        let cacheErrorWasFound = false; 
-        client.on('error', (error) => {
-            if(cacheErrorWasFound) return; // redis max of n connection attemps.
-
-            console.debug(`Sponsor Middleware non-blocking, ${error}:`); // display once
-            cacheErrorWasFound = true;
-            next();
-        });
-
-        client.on('ready', () => {
-            console.debug(`Sponsor Middleware ready now`);
-            if(cacheErrorWasFound) {
-                console.debug(`Sponsor Cache Middleware ready now`);
-                return; // next() route request done without cache client
-            }
-
-            // Reading data from Redis in memory cache
-            client.get(req.originalUrl, (error,reply) => {
-                if(reply)  {
-                    console.debug(`Redis get \'${req.originalUrl}\' +OK`);
-                    res.status(200);
-                    res.json(JSON.parse(reply));
-                } else {
-                    console.debug(`Redis get \'${req.originalUrl}\' ${error || 'NOT AVAILABLE'}`);
-                    next();
-                } 
+                console.log(`Sponsor Cache Data non-blocking, error: ${error}:`);
+                cacheErrorWasFound = true;
+                return;
+            });
+            
+            client.on('ready', async () => {
+                if(await Promise.resolve(client.set(key, JSON.stringify(value))) &&
+                    await Promise.resolve(client.expire(key, 60/*seconds*/*10))) {
+                    console.debug(`Redis set \'${key}\' +OK`);
+                }
 
                 client.quit();
-            }); // end client.get(...)
-        }); // end client.on('ready'...)
-    } // end SponsorsRedisMiddleware
-
-    app.use(bodyParser.json({type: 'application/json'}));
-    app.use(SponsorsRedisMiddleware);
-
-    router.get("/:id", async (req,res) => {
-        const jsonResponse = new CoreServices.JsonResponse();
-        res.status(200);
-
-        var jsonData;
-        try {
-            const db = new SponsorReaderDb();
-            const data = await db.getSponsor(req.params.id);
-            await db.close();
-
-            jsonData = jsonResponse.createData(data);
-            await cacheData(req.originalUrl, jsonData);
-        } catch(error) {
-            console.debug(`ERROR: Route get ${req.originalUrl} ${error}`);
-            jsonData = jsonData || jsonResponse.createError('Data not available');
-        } finally {
-            res.json(jsonData);
+            });    
         }
-    });
 
-    router.get("/", async (req,res) => {
-        const jsonResponse = new CoreServices.JsonResponse();
-        res.status(200);
+        const SPONSORS_ROUTER_BASE_URL = '/api/report/sponsors';
+        async function SponsorsRedisMiddleware(req: Request, res: Response, next: NextFunction) {
+            if(req.originalUrl.startsWith(SPONSORS_ROUTER_BASE_URL) == false) {
+                next();
+                return;
+            }
+            const client = new RedisClient({});
 
-        var page = Number.parseInt(req.query.page as any || 1); 
-        var limit = Number.parseInt(req.query.limit as any || 5);
-        var phrase = req.query.phrase as any || null;
+            let cacheErrorWasFound = false; 
+            client.on('error', (error) => {
+                if(cacheErrorWasFound) return; // redis max of n connection attemps.
 
-        var jsonData;
-        try {
-            const db = new SponsorReaderDb();
-            const data = await db.getSponsors(page,limit,phrase);
-            await db.close();
+                console.debug(`Sponsor Middleware non-blocking, ${error}:`); // display once
+                cacheErrorWasFound = true;
+                next();
+            });
 
-            jsonData = jsonResponse.createPagination(data, 1, page);
-            await cacheData(req.originalUrl, jsonData);
-        } catch(error) {
-            console.debug(`ERROR: Route get ${req.originalUrl} ${error}`);
-            jsonData = jsonData || jsonResponse.createError('Data not available');
-        } finally {
-            res.json(jsonData);
-        }
-    });
+            client.on('ready', () => {
+                console.debug(`Sponsor Middleware ready now`);
+                if(cacheErrorWasFound) {
+                    console.debug(`Sponsor Cache Middleware ready now`);
+                    return; // next() route request done without cache client
+                }
 
-    // string.concat('/') is an express HACK. req.originalUrl.startsWith(SPONSORS_ROUTER_BASE_URL)
-    app.use(SPONSORS_ROUTER_BASE_URL.concat('/'), router);
-} // end publishWebAPI
+                // Reading data from Redis in memory cache
+                client.get(req.originalUrl, (error,reply) => {
+                    if(reply)  {
+                        console.debug(`Redis get \'${req.originalUrl}\' +OK`);
+                        res.status(200);
+                        res.json(JSON.parse(reply));
+                    } else {
+                        console.debug(`Redis get \'${req.originalUrl}\' ${error || 'NOT AVAILABLE'}`);
+                        next();
+                    } 
+
+                    client.quit();
+                }); // end client.get(...)
+            }); // end client.on('ready'...)
+        } // end SponsorsRedisMiddleware
+
+        app.use(bodyParser.json({type: 'application/json'}));
+        app.use(SponsorsRedisMiddleware);
+
+        router.get("/:id", async (req,res) => {
+            const jsonResponse = new CoreServices.JsonResponse();
+            res.status(200);
+
+            var jsonData;
+            try {
+                const db = new SponsorReaderDb();
+                const data = await db.getSponsor(req.params.id);
+                await db.close();
+
+                jsonData = jsonResponse.createData(data);
+                await cacheData(req.originalUrl, jsonData);
+            } catch(error) {
+                console.debug(`ERROR: Route get ${req.originalUrl} ${error}`);
+                jsonData = jsonData || jsonResponse.createError('Data not available');
+            } finally {
+                res.json(jsonData);
+            }
+        });
+
+        router.get("/", async (req,res) => {
+            const jsonResponse = new CoreServices.JsonResponse();
+            res.status(200);
+
+            var page = Number.parseInt(req.query.page as any || 1); 
+            var limit = Number.parseInt(req.query.limit as any || 5);
+            var phrase = req.query.phrase as any || null;
+
+            var jsonData;
+            try {
+                const db = new SponsorReaderDb();
+                const data = await db.getSponsors(page,limit,phrase);
+                await db.close();
+
+                jsonData = jsonResponse.createPagination(data, 1, page);
+                await cacheData(req.originalUrl, jsonData);
+            } catch(error) {
+                console.debug(`ERROR: Route get ${req.originalUrl} ${error}`);
+                jsonData = jsonData || jsonResponse.createError('Data not available');
+            } finally {
+                res.json(jsonData);
+            }
+        });
+
+        // string.concat('/') is an express HACK. req.originalUrl.startsWith(SPONSORS_ROUTER_BASE_URL)
+        app.use(SPONSORS_ROUTER_BASE_URL.concat('/'), router);
+    } // end publishWebAPI
+} // end SponsorReportService

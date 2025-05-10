@@ -1,6 +1,6 @@
 import {CoreServer} from "rescueshelter.core";
-import {PublishWebAPI as AnimalReportServices} from "./AnimalReportService";
-import {PublishWebAPI as SponsorReportServices} from "./SponsorReportService";
+import {AnimalReportService} from "./AnimalReportService";
+import {SponsorReportService} from "./SponsorReportService";
 
 declare let __dirname; // variable initialize by NodeJS Path Module
 
@@ -13,7 +13,9 @@ CoreServer.start({
         name: 'Rescue Shelter Report Services', 
         port: 3303
     },
-    middleWare: [AnimalReportServices,SponsorReportServices], 
-    corsHostName: [/* cors */], 
+    middleWare: [
+        new AnimalReportService().publishWebAPI,
+        new SponsorReportService().publishWebAPI], 
+    corsHostNames: ['https://localhost:3000'], 
     webRootPath: staticPath,
     closeCallback: ()=> {} });
