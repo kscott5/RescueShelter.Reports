@@ -1,6 +1,6 @@
 {
   "name": "rescueshelter.reports",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Rescue Shelter Report Services",
   "main": "index.js",
   "repository": "https://github.com/kscott5/rescueShelter.reports.git",
@@ -8,7 +8,7 @@
   "license": "GPL-3.0-or-later",
   "dependencies": {
     "body-parser": "2.2.0",
-    "cors": "^2.8.5",
+    "cors": "2.8.5",
     "express": "5.1.0",
     "mongoose": "8.14.0",
     "redis": "5.0.1",
@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@types/body-parser": "1.19.5",
+    "@types/cors": "2.8.18",
     "@types/express": "5.0.1",
     "@types/node": "22.14.1",
     "snyk": "^1.410.3",

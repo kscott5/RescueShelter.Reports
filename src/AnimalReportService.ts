@@ -5,7 +5,8 @@ import cors from "cors";
 import {createClient as createRedisClient} from "redis";
 import {Connection, Model} from "mongoose";
 
-import {CoreServices, createLogService} from "rescueshelter.core";
+// @ts-ignore
+import {CoreServices} from "rescueshelter.core";
 import { CORSOptions } from ".";
 
 let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
@@ -13,12 +14,10 @@ let router = express.Router({ caseSensitive: true, mergeParams: true, strict: tr
 class AnimalReaderDb {
     private connection: Connection;
     private model: Model<CoreServices.animalSchema>;
-    private selectionFields;
-
+    
     constructor() {
         this.connection = CoreServices.createConnection();
         this.model = this.connection.model(CoreServices.ANIMALS_MODEL_NAME, CoreServices.animalSchema);
-        this.selectionFields = '_id name description imageSrc sponsors';                
     }
 
     async close() {
@@ -32,7 +31,7 @@ class AnimalReaderDb {
         return data;
     } // end getAnimal
 
-    async getAnimals(options) : Promise<any> {
+    async getAnimals(options: any) : Promise<any> {
 
         const filters = {
             page: options?.page || 1, 

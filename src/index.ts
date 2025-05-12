@@ -1,7 +1,9 @@
+// @ts-ignore
 import {CoreServer} from "rescueshelter.core";
 import {AnimalReportService} from "./AnimalReportService";
 import {SponsorReportService} from "./SponsorReportService";
 
+// @ts-ignore
 declare let __dirname; // variable initialize by NodeJS Path Module
 
 let path = require("node:path");
@@ -12,6 +14,7 @@ export const CORSHostNames = [
 ];
 
 export const CORSOptions = {
+    // @ts-ignore
     origin: (origin, callback) => {
         callback(null, {
             origin: CORSHostNames.includes(origin)

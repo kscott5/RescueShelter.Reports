@@ -4,6 +4,8 @@ import cors from "cors";
 
 import {createClient as createRedisClient}  from "redis";
 import {Connection, Model } from "mongoose";
+
+// @ts-ignore
 import {CoreServices} from "rescueshelter.core";
 import { CORSOptions } from ".";
 
@@ -13,11 +15,8 @@ let router = express.Router({ caseSensitive: true, mergeParams: true, strict: tr
 class SponsorReaderDb {
 private connection: Connection;
     private model: Model<CoreServices.animalSchema>;
-    private selectionFields;
-
 
     constructor() {
-        this.selectionFields =  "_id useremail username firstname lastname photo audit";
         this.connection = CoreServices.createConnection();
         this.model = this.connection.model(CoreServices.SPONSORS_MODEL_NAME, CoreServices.sponsorSchema);
     }
@@ -31,7 +30,7 @@ private connection: Connection;
         return data;
     }
 
-    async getSponsors(options) : Promise<any> {
+    async getSponsors(options: any) : Promise<any> {
         var filters = {...options,
             limit: options.limit || 100,
             keywords: (options.keywords+'').trim()
