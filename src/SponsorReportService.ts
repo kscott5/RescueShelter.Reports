@@ -1,10 +1,13 @@
-import {Application, NextFunction, Request, Response, Router} from "express";
+import express from "express";
 import bodyParser from "body-parser";
+import cors from "cors";
+
 import {createClient as createRedisClient}  from "redis";
 import {Connection, Model } from "mongoose";
 import {CoreServices} from "rescueshelter.core";
+import { CORSOptions } from ".";
 
-let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
+let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
 
 
 class SponsorReaderDb {
@@ -46,7 +49,7 @@ private connection: Connection;
 export class SponsorReportService {
     constructor(){}
     
-    publishWebAPI(app: Application) : void {   
+    publishWebAPI(app: express.Application) : void {   
         /**
          * @description Adds Redis cache data with expiration
          * @param {string} key: request original url
@@ -78,7 +81,7 @@ export class SponsorReportService {
         }
 
         const SPONSORS_ROUTER_BASE_URL = '/api/report/sponsors';
-        async function SponsorsRedisMiddleware(req: Request, res: Response, next: NextFunction) {
+        async function SponsorsRedisMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
             if(req.originalUrl.startsWith(SPONSORS_ROUTER_BASE_URL) == false) {
                 next();
                 return;
@@ -116,8 +119,9 @@ export class SponsorReportService {
             client.connect();
         } // end SponsorsRedisMiddleware
 
-        app.use(bodyParser.json({type: 'application/json'}));
-        app.use(SponsorsRedisMiddleware);
+        router.use(bodyParser.json({type: 'application/json'}));
+        router.use(cors(CORSOptions));
+        router.use(SponsorsRedisMiddleware);
 
         router.get("/:id", async (req,res) => {
             const jsonResponse = new CoreServices.JsonResponse();

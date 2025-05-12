@@ -1,11 +1,14 @@
-import {Application, NextFunction, Request, Response, Router} from "express";
+import express from "express";
 import bodyParser from "body-parser";
+import cors from "cors";
+
 import {createClient as createRedisClient} from "redis";
 import {Connection, Model} from "mongoose";
 
 import {CoreServices, createLogService} from "rescueshelter.core";
+import { CORSOptions } from ".";
 
-let router = Router({ caseSensitive: true, mergeParams: true, strict: true});
+let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});
 
 class AnimalReaderDb {
     private connection: Connection;
@@ -89,7 +92,7 @@ class AnimalReaderDb {
 export class AnimalReportService {
     constructor(){}
 
-    publishWebAPI(app: Application) : void {
+    publishWebAPI(app: express.Application) : void {
         /**
          * @description Adds Redis cache data with expiration
          * @param {string} key: request original url
@@ -119,7 +122,7 @@ export class AnimalReportService {
         }
 
         const ANIMAL_ROUTER_BASE_URL = '/api/report/animals';
-        async function AnimalsRedisMiddleware(req: Request, res: Response, next: NextFunction) {
+        async function AnimalsRedisMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
             if(req.originalUrl.startsWith(ANIMAL_ROUTER_BASE_URL) == false) {
                 next();
                 return;
@@ -158,8 +161,9 @@ export class AnimalReportService {
             client.connect();
         } // end AnimalsRedisMiddleware
 
-        app.use(bodyParser.json({type: 'application/json'}));
-        app.use(AnimalsRedisMiddleware);
+        router.use(bodyParser.json({type: 'application/json'}));
+        router.use(cors(CORSOptions));
+        router.use(AnimalsRedisMiddleware);
 
         router.get('/categories', async (req,res) => {
             res.status(200);

@@ -4,8 +4,27 @@ import {SponsorReportService} from "./SponsorReportService";
 
 declare let __dirname; // variable initialize by NodeJS Path Module
 
-let path = require("path");
+let path = require("node:path");
 let staticPath = path.join(__dirname, '../public');
+
+export const CORSHostNames = [
+    "https://localhost:3000"
+];
+
+export const CORSOptions = {
+    origin: (origin, callback) => {
+        callback(null, {
+            origin: CORSHostNames.includes(origin)
+        });
+    },
+    methods: ['GET','POST', 'PUT'],
+    allowHeaders: ['Content-Type'],
+    exposedHeaders: [], // none
+    credentials: false,
+    maxAge: 3000, // seconds
+    preFlightContinue: true,
+    optionSuccessStatus: 210
+}
 
 CoreServer.start({
     server: {
