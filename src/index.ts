@@ -15,6 +15,7 @@ export const CORSOptions = {
     // @ts-ignore
     origin: (origin, callback) => {
         callback(null, {
+            // @ts-ignore
             origin: CORSHostNames.includes(origin)
         });
     },
@@ -36,6 +37,6 @@ Core.server.start({
     middleWare: [
         new AnimalReportService().publishWebAPI,
         new SponsorReportService().publishWebAPI], 
-    corsHostNames: [], // bad host requestors
+    corsHostNames: CORSHostNames, // bad host requestors
     webRootPath: staticPath,
     closeCallback: ()=> {} });
