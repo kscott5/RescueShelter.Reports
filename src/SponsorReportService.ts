@@ -6,7 +6,7 @@ import {createClient as createRedisClient}  from "redis";
 import {Connection, Model } from "mongoose";
 
 // @ts-ignore
-import {CoreServices} from "rescueshelter.core";
+import {services as CoreServices} from "rescueshelter.core";
 import { CORSOptions } from ".";
 
 let router = express.Router({ caseSensitive: true, mergeParams: true, strict: true});

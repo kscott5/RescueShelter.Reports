@@ -12,7 +12,7 @@
     "express": "5.1.0",
     "mongoose": "8.14.0",
     "redis": "5.0.1",
-    "rescueshelter.core": "2.1.7",
+    "rescueshelter.core": "^2.1.9",
     "winston": "3.3.3"
   },
   "devDependencies": {

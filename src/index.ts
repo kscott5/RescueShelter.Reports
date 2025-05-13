@@ -1,5 +1,5 @@
 // @ts-ignore
-import {CoreServer} from "rescueshelter.core";
+import * as Core from "rescueshelter.core";
 import {AnimalReportService} from "./AnimalReportService";
 import {SponsorReportService} from "./SponsorReportService";
 
@@ -9,9 +9,7 @@ declare let __dirname; // variable initialize by NodeJS Path Module
 let path = require("node:path");
 let staticPath = path.join(__dirname, '../public');
 
-export const CORSHostNames = [
-    "https://localhost:3000"
-];
+export const CORSHostNames = []; // bad host requestors
 
 export const CORSOptions = {
     // @ts-ignore
@@ -29,7 +27,7 @@ export const CORSOptions = {
     optionSuccessStatus: 210
 }
 
-CoreServer.start({
+Core.server.start({
     server: {
         secure: true,
         name: 'Rescue Shelter Report Services', 
@@ -38,6 +36,6 @@ CoreServer.start({
     middleWare: [
         new AnimalReportService().publishWebAPI,
         new SponsorReportService().publishWebAPI], 
-    corsHostNames: ['https://localhost:3000'], 
+    corsHostNames: [], // bad host requestors
     webRootPath: staticPath,
     closeCallback: ()=> {} });
