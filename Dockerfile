@@ -8,12 +8,14 @@ LABEL org.opencontainers.image.version="v2.0.1"
   
 EXPOSE 3303
 
-RUN export RS_CONNETION_URI="mongodb+srv://cluster0.dol02bo.mongodb.net/?authSource=%24external&authMechanism=MONGODB-X509&retryWrites=true&tlsCertificateKeyFile=/app/cert/production.perm&w=majority&appName=Cluster0&dbname=rescueshelter"
+ENV RS_CONNETION_URI="mongodb+srv://cluster0.dol02bo.mongodb.net/?authSource=%24external&authMechanism=MONGODB-X509&retryWrites=true&tlsCertificateKeyFile=/app/cert/production.pem&w=majority&appName=Cluster0&dbname=rescueshelter"
 
 RUN mkdir /app
 RUN mkdir /app/cert
 
+COPY cert.readwrite.pem /app/cert/production.pem
 COPY ./dist/** /app
+
 WORKDIR /app
 
 ENTRYPOINT [ "node", "index.js" ]
