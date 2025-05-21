@@ -13,7 +13,7 @@
     "mongoose": "8.14.0",
     "redis": "5.0.1",
     "rescueshelter.core": "^2.1.9",
-    "winston": "3.3.3"
+    "winston": "3.17.0"
   },
   "devDependencies": {
     "@types/body-parser": "1.19.5",
