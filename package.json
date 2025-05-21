@@ -10,7 +10,7 @@
     "body-parser": "2.2.0",
     "cors": "2.8.5",
     "express": "5.1.0",
-    "mongoose": "8.14.0",
+    "mongoose": "8.14.1",
     "redis": "5.0.1",
     "rescueshelter.core": "^2.1.9",
     "winston": "3.3.3"
