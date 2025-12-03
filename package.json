@@ -9,7 +9,7 @@
   "dependencies": {
     "body-parser": "2.2.0",
     "cors": "2.8.5",
-    "express": "5.1.0",
+    "express": "5.2.0",
     "mongoose": "8.14.0",
     "redis": "5.0.1",
     "rescueshelter.core": "^2.1.9",
