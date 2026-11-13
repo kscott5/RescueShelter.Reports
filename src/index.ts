@@ -32,7 +32,7 @@ Core.server.start({
     server: {
         secure: true,
         name: 'Rescue Shelter Report Services', 
-        port: 3303
+        port: 443
     },
     middleWare: [
         new AnimalReportService().publishWebAPI,
