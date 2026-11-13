@@ -11,16 +11,16 @@ EXPOSE 443
 
 ENV NODE_ENV="production"
 
-ENV RS_API_LOG_DIR='${PATH}/logs'
-ENV RS_CONNECTION_URI="mongodb+srv://cluster0.dol02bo.mongodb.net/?authSource=%24external&authMechanism=MONGODB-X509&retryWrites=true&tlsCertificateKeyFile=${PATH}/cert/production.pem&w=majority&appName=Cluster0&dbname=rescueshelter"
+ENV RS_API_LOG_DIR='$PATH/logs'
+ENV RS_CONNECTION_URI="mongodb+srv://cluster0.dol02bo.mongodb.net/?authSource=%24external&authMechanism=MONGODB-X509&retryWrites=true&tlsCertificateKeyFile=$PATH/cert/production.pem&w=majority&appName=Cluster0&dbname=rescueshelter"
 
-RUN mkdir ${PATH}
-RUN mkdir ${PATH}/cert
-RUN mkdir ${PATH}/logs
+RUN /usr/bin/mkdir $PATH
+RUN /usr/bin/mkdir $PATH/cert
+RUN /usr/bin/mkdir $PATH/logs
 
-COPY cert.readwrite.pem ${PATH}cert/production.pem
-COPY ./dist/** ${PATH}
+COPY cert.readwrite.pem $PATH/cert/production.pem
+COPY ./dist/** $PATH
 
-WORKDIR ${PATH}
+WORKDIR $PATH
 
 ENTRYPOINT [ "node", "index.js" ]
