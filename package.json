@@ -7,12 +7,12 @@
   "author": "Karega K. Scott",
   "license": "GPL-3.0-or-later",
   "dependencies": {
-    "body-parser": "2.2.0",
+    "body-parser": "^2.4.0",
     "cors": "2.8.5",
     "express": "5.1.0",
-    "mongoose": "8.14.0",
+    "mongoose": "^8.24.9",
     "redis": "5.0.1",
-    "rescueshelter.core": "^2.1.9",
+    "rescueshelter.core": "^2.1.5",
     "winston": "3.3.3"
   },
   "devDependencies": {
@@ -32,22 +32,21 @@
   ],
   "scripts": {
     "clean": "rm -r -f ./dist",
-
     "tsbuild": "npm run clean & npx tsc -p tsconfig.json",
     "esbuild": "npm run clean && npx esbuild --bundle src/index.ts --outdir=./dist --platform=node --target=node21",
     "esbuild.watch": "npm run clean && npx esbuild --bundle src/index.ts --outdir=./dist --platform=node --target=node21 --watch",
-    
     "local.mongo": "docker run -p 27017:27017 --rm --detach --name mongo_dev mongo mongod",
     "local.redis": "docker run -it -p 6379:6379 --rm --detach --name redis_dev redis --loglevel debug",
     "local.dataset": "python ./datalake/src/rescueshelter/sample.data.py",
-    
     "docker.stop": "docker stop managers",
     "docker.rmi": "docker rmi rescueshelter/reports:latest",
     "docker.network": "docker network create rescueshelter",
     "docker.build": "docker build -t rescueshelter/reports:latest --no-cache .",
     "docker.reports": "docker run -d --rm --name reports --network rescueshelter -p 3303:3303 rescueshelter/reports:latest",
-    
     "start": "NODE_ENV='production' node ./index.js",
     "debug": "NODE_ENV='development' NODE_ENV_LOG_LEVEL='debug' NODE_ENV_LOG_DIR='./dist/logs' node --inspect=127.0.0.1:9230 ./index.js"
+  },
+  "allowScripts": {
+    "snyk@1.1308.4": true
   }
 }
