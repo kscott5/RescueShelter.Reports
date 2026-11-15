@@ -2,6 +2,7 @@
 import * as Core from "rescueshelter.core";
 import {AnimalReportService} from "./AnimalReportService";
 import {SponsorReportService} from "./SponsorReportService";
+import {randomInt} from "node:crypto";
 
 // @ts-ignore
 declare let __dirname; // variable initialize by NodeJS Path Module
@@ -32,7 +33,7 @@ Core.server.start({
     server: {
         secure: true,
         name: 'Rescue Shelter Report Services', 
-        port: 443
+        port: (process.env.NODE_ENV === "production")? 443: randomInt(1001,9999)
     },
     middleWare: [
         new AnimalReportService().publishWebAPI,
