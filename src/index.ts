@@ -31,7 +31,7 @@ export const CORSOptions = {
 
 Core.server.start({
     server: {
-        secure: true,
+        secure: false,
         name: 'Rescue Shelter Report Services', 
         port: (process.env.NODE_ENV === "production")? 443: randomInt(1001,9999)
     },
